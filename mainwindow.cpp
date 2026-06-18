@@ -9,8 +9,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     initUI();
 
-
-
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
@@ -182,4 +180,5 @@ void MainWindow::on_pushButton_clicked()
     qDebug() << "点击了模拟测试按钮，对于没有模拟从站设备，以及没有下位机的情况。。。。";
     //模拟数据。
 }
+
 
