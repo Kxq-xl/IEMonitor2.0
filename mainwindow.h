@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "modbuscomm.h"
+#include "datamodel.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -24,9 +27,13 @@ public:
     void initConnectionPage();
 
 private slots:
+    //连接Modbus TCP按钮
     void on_conTcp_clicked();
+    //断开连接按钮
+    void on_disCon_clicked();
 
 private:
     Ui::MainWindow *ui;
+    ModbusComm m_comm;
 };
 #endif // MAINWINDOW_H

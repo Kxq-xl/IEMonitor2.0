@@ -9,6 +9,24 @@ MainWindow::MainWindow(QWidget *parent)
 
     initUI();
 
+    //将获取到的信息同步到ui上面
+    connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
+        // 这就是上位机的数据主链路：
+        // 采集到一包数据后，同时更新数值、曲线、报警逻辑。
+
+        // 测试数据是否获取成功
+        // qDebug() << data.timestamp << " ";
+        // qDebug() << data.temp1 << " ";
+        // qDebug() << data.temp2 << " ";
+        // qDebug() << data.temp3 << " ";
+        // qDebug() << data.pressure << " ";
+
+        ui->temp1->setText(QString::number(data.temp1) + " ℃");
+        ui->temp2->setText(QString::number(data.temp2) + " ℃");
+        ui->temp3->setText(QString::number(data.temp3) + " ℃");
+        ui->pressure->setText(QString::number(data.pressure) + " ℃");
+
+    });
 }
 
 MainWindow::~MainWindow()
@@ -55,7 +73,16 @@ void MainWindow::initConnectionPage()
 
 void MainWindow::on_conTcp_clicked()
 {
+    qDebug () << "点击了 TCP 连接按钮";
     // 点击“连接 Modbus TCP”后，软件开始从外部 Modbus Slave/PLC 采集数据。
+    m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), ui->spinInterval->value());
 
+}
+
+
+void MainWindow::on_disCon_clicked()
+{
+    qDebug () << "点击了关闭按钮";
+    m_comm.disconnectDevice();
 }
 

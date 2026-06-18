@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui serialbus
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -10,10 +10,13 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    modbuscomm.cpp
 
 HEADERS += \
-    mainwindow.h
+    datamodel.h \
+    mainwindow.h \
+    modbuscomm.h
 
 FORMS += \
     mainwindow.ui
