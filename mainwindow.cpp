@@ -17,6 +17,16 @@ MainWindow::MainWindow(QWidget *parent)
         //return;
     }
 
+
+    m_saveTimer = new QTimer();
+    connect(m_saveTimer, &QTimer::timeout, this, [this]() {
+        if (m_comm.isConnected()) {
+            // 工业软件通常不会把每个采样点都入库，否则数据库增长太快。
+            // 这里每 2 秒保存一次，用来体验历史追溯功能。
+            m_db.insertSensorData(m_lastData);
+        }
+    });
+    m_saveTimer->start(2000);
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
@@ -28,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
         // qDebug() << data.temp2 << " ";
         // qDebug() << data.temp3 << " ";
         // qDebug() << data.pressure << " ";
-
+        m_lastData = data;
         //1. 更新实时数
         ui->temp1->setText(QString::number(data.temp1) + " ℃");
         ui->temp2->setText(QString::number(data.temp2) + " ℃");

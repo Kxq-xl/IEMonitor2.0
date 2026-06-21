@@ -22,6 +22,23 @@ bool DatabaseManager::open()
     return createTables();
 }
 
+bool DatabaseManager::insertSensorData(const SensorData &data)
+{
+    // 保存运行数据，供“历史数据”页面按时间查询。
+    QSqlQuery query(m_db);
+    query.prepare("insert into t_sensor_data(timestamp,temp1,temp2,temp3,pressure) values(?,?,?,?,?)");
+    query.addBindValue(data.timestamp.toString(Qt::ISODate));
+    query.addBindValue(data.temp1);
+    query.addBindValue(data.temp2);
+    query.addBindValue(data.temp3);
+    query.addBindValue(data.pressure);
+    if (!query.exec()) {
+        m_lastError = query.lastError().text();
+        return false;
+    }
+    return true;
+}
+
 QList<QVariantMap> DatabaseManager::queryHistory(const QDateTime &start, const QDateTime &end)
 {
     // 查询指定时间范围内的历史采样数据。

@@ -7,7 +7,7 @@
 #include <QDir>
 #include <QSqlQuery>
 #include <QSqlError>
-
+#include "datamodel.h"
 
 // databasemanager.h / databasemanager.cpp
 // 数据持久化模块：负责把实时采集数据、报警事件写入 SQLite，
@@ -23,7 +23,8 @@ public:
     // 打开程序运行目录下的 industrial_monitor.db，并自动建表。
     bool open();
 
-
+    // 保存一条实时采样数据。
+    bool insertSensorData(const SensorData &data);
 
     // 查询指定时间范围内的历史采样数据。
     QList<QVariantMap> queryHistory(const QDateTime &start, const QDateTime &end);

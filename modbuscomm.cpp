@@ -67,6 +67,11 @@ void ModbusComm::disconnectDevice()
     m_client = nullptr;
 }
 
+bool ModbusComm::isConnected() const
+{
+    return (m_client && m_client->state() == QModbusDevice::ConnectedState);
+}
+
 void ModbusComm::poll()
 {
     if (!m_client || m_client->state() != QModbusDevice::ConnectedState) {

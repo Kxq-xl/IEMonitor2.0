@@ -24,6 +24,9 @@ public:
     void disconnectDevice();
 
 
+    // 给 UI 和数据库定时保存逻辑判断当前是否处于采集状态。
+    bool isConnected() const;
+
 private:
     //定时读取 Modbus 保持寄存器。
     void poll();

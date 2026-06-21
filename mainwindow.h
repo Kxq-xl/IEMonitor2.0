@@ -56,6 +56,10 @@ private:
     int m_sampleIndex = 0;
     //数据库
     DatabaseManager m_db;
+    //数据库保存定时器
+    QTimer *m_saveTimer = nullptr;
+    //最近一次采集到的数据
+    SensorData m_lastData;
 
     QChart *m_chart = nullptr;
     QLineSeries *m_temp1Series = nullptr;
