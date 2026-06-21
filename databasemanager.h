@@ -29,6 +29,9 @@ public:
     // 查询指定时间范围内的历史采样数据。
     QList<QVariantMap> queryHistory(const QDateTime &start, const QDateTime &end);
 
+    // 查询最近的报警记录。
+    QList<QVariantMap> queryAlarms();
+
     // 返回最近一次数据库错误，方便界面提示。
     QString lastError() const;
 signals:

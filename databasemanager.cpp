@@ -66,6 +66,29 @@ QList<QVariantMap> DatabaseManager::queryHistory(const QDateTime &start, const Q
     return rows;
 }
 
+QList<QVariantMap> DatabaseManager::queryAlarms()
+{
+    // QVariantMap 让 UI 层不用关心 SQL 字段顺序，按名字取值即可。
+    QList<QVariantMap> rows;
+    QSqlQuery query(m_db);
+    query.prepare("select timestamp,channel,alarm_type,value,threshold from t_alarm_record order by id desc limit 200");
+    if (!query.exec()) {
+        m_lastError = query.lastError().text();
+        return rows;
+    }
+
+    while (query.next()) {
+        QVariantMap row;
+        row["timestamp"] = query.value(0);
+        row["channel"] = query.value(1);
+        row["alarm_type"] = query.value(2);
+        row["value"] = query.value(3);
+        row["threshold"] = query.value(4);
+        rows.append(row);
+    }
+    return rows;
+}
+
 
 
 QString DatabaseManager::lastError() const

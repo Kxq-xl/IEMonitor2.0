@@ -72,6 +72,9 @@ void MainWindow::initUI()
     // 初始化历史记录的页面
     initHistoryPage();
 
+    // 初始化报警界面
+    initAlarmPage();
+
 }
 
 void MainWindow::initChart()
@@ -174,6 +177,14 @@ void MainWindow::initHistoryPage()
     ui->historyTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
+void MainWindow::initAlarmPage()
+{
+    ui->alarmTable->setColumnCount(5);
+    ui->alarmTable->setHorizontalHeaderLabels({"时间", "通道", "类型", "数值", "阈值"});
+    //将列全部铺满
+    ui->alarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+}
+
 void MainWindow::appendChartPoint(const SensorData &data)
 {
     ++m_sampleIndex;
@@ -220,6 +231,17 @@ void MainWindow::on_pushButton_clicked()
 }
 
 
+
+
+QTableWidgetItem* MainWindow::makeCell(const QString& text)
+{
+    QTableWidgetItem *item = new QTableWidgetItem(text);
+    item->setTextAlignment(Qt::AlignCenter);
+    item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+    return item;
+}
+
+
 //点击了查询按钮
 void MainWindow::on_queryButton_clicked()
 {
@@ -227,14 +249,12 @@ void MainWindow::on_queryButton_clicked()
     QList<QVariantMap> rows = m_db.queryHistory(ui->startEdit->dateTime(), ui->endEdit->dateTime());
 
     // 封装生成居中只读单元格 匿名函数
-    auto makeCell = [](const QString& text)->QTableWidgetItem*{
-        QTableWidgetItem *item = new QTableWidgetItem(text);
-        item->setTextAlignment(Qt::AlignCenter);
-        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-        return item;
-    };
-
-
+    // auto makeCell = [](const QString& text)->QTableWidgetItem*{
+    //     QTableWidgetItem *item = new QTableWidgetItem(text);
+    //     item->setTextAlignment(Qt::AlignCenter);
+    //     item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+    //     return item;
+    // };
     // 先清空旧表格内容
     ui->historyTable->clearContents();
     // 设置表格总行数
@@ -247,6 +267,27 @@ void MainWindow::on_queryButton_clicked()
         ui->historyTable->setItem(row, 2, makeCell(QString::number(item["temp2"].toDouble(), 'f', 1)));
         ui->historyTable->setItem(row, 3, makeCell(QString::number(item["temp3"].toDouble(), 'f', 1)));
         ui->historyTable->setItem(row, 4, makeCell(QString::number(item["pressure"].toDouble(), 'f', 1)));
+    }
+}
+
+
+void MainWindow::on_refreshButton_clicked()
+{
+    qDebug() << "点击了刷新报警记按钮";
+    QList<QVariantMap> rows = m_db.queryAlarms();
+
+    // 先清空旧表格内容
+    ui->alarmTable->clearContents();
+    // 设置表格总行数
+    ui->alarmTable->setRowCount(rows.size());
+
+    for (int row = 0; row < rows.size(); ++row) {
+        const QVariantMap item = rows.at(row);
+        ui->alarmTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
+        ui->alarmTable->setItem(row, 1, makeCell(item["channel"].toString()));
+        ui->alarmTable->setItem(row, 2, makeCell(item["alarm_type"].toString()));
+        ui->alarmTable->setItem(row, 3, makeCell(QString::number(item["value"].toDouble(), 'f', 1)));
+        ui->alarmTable->setItem(row, 4, makeCell(QString::number(item["threshold"].toDouble(), 'f', 1)));
     }
 }
 

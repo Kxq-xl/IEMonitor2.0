@@ -9,6 +9,7 @@
 #include "datamodel.h"
 #include "databasemanager.h"
 #include <QMessageBox>
+#include <QTableWidgetItem>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -35,8 +36,14 @@ public:
     // 初始化历史记录的页面
     void initHistoryPage();
 
+    // 初始化报警界面
+    void initAlarmPage();
+
     // 把新采样点追加到实时趋势曲线。
     void appendChartPoint(const SensorData &data);
+
+    //将表格项制作成居中不可修改的属性
+    QTableWidgetItem* makeCell(const QString& text);
 
 private slots:
     //连接Modbus TCP按钮
@@ -47,6 +54,8 @@ private slots:
     void on_pushButton_clicked();
 
     void on_queryButton_clicked();
+
+    void on_refreshButton_clicked();
 
 private:
     Ui::MainWindow *ui;
