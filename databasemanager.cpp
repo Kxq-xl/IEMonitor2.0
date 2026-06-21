@@ -89,7 +89,22 @@ QList<QVariantMap> DatabaseManager::queryAlarms()
     return rows;
 }
 
-
+bool DatabaseManager::insertAlarmRecord(const QString &channel, const QString &type, double value, double threshold)
+{
+    // 保存报警事件，真实工业软件通常会长期保留报警记录。
+    QSqlQuery query(m_db);
+    query.prepare("insert into t_alarm_record(timestamp,channel,alarm_type,value,threshold) values(?,?,?,?,?)");
+    query.addBindValue(QDateTime::currentDateTime().toString(Qt::ISODate));
+    query.addBindValue(channel);
+    query.addBindValue(type);
+    query.addBindValue(value);
+    query.addBindValue(threshold);
+    if (!query.exec()) {
+        m_lastError = query.lastError().text();
+        return false;
+    }
+    return true;
+}
 
 QString DatabaseManager::lastError() const
 {

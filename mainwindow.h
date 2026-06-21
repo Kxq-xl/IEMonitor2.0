@@ -10,6 +10,7 @@
 #include "databasemanager.h"
 #include <QMessageBox>
 #include <QTableWidgetItem>
+#include "alarmmanager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -45,6 +46,12 @@ public:
     //将表格项制作成居中不可修改的属性
     QTableWidgetItem* makeCell(const QString& text);
 
+    // 从数据库读取报警记录并显示到表格。
+    void refreshAlarmTable();
+
+    // 把界面上填写的阈值同步到 AlarmManager。
+    void applyAlarmLimits();
+
 private slots:
     //连接Modbus TCP按钮
     void on_conTcp_clicked();
@@ -69,6 +76,12 @@ private:
     QTimer *m_saveTimer = nullptr;
     //最近一次采集到的数据
     SensorData m_lastData;
+
+    //报警模块
+    AlarmManager m_alarm;
+
+    //
+    QMap<QString, QLabel *> m_valueLabels;
 
     QChart *m_chart = nullptr;
     QLineSeries *m_temp1Series = nullptr;

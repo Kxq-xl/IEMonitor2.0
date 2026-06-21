@@ -27,6 +27,9 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     m_saveTimer->start(2000);
+
+    applyAlarmLimits();
+
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
@@ -48,8 +51,31 @@ MainWindow::MainWindow(QWidget *parent)
         //2. 更新图表
         appendChartPoint(data);
 
-
+        //应用最新的低限，高限
+        applyAlarmLimits();
         //3. 是否报警
+        m_alarm.check(data);
+    });
+
+    //警报来的信号
+    connect(&m_alarm, &AlarmManager::alarmTriggered, this, [this](const QString &channel, const QString &type, double value, double threshold) {
+        // 报警发生时，界面变红，
+        if (m_valueLabels.contains(channel)) {
+            m_valueLabels[channel]->setStyleSheet("font-size:24px;font-weight:700;color:#dc2626;");
+        }
+        //同时写入数据库，方便后续追溯。
+        m_db.insertAlarmRecord(channel, type, value, threshold);
+        //自动刷新报警界面
+        refreshAlarmTable();
+        statusBar()->showMessage(QString("报警：%1 %2，当前 %3，阈值 %4").arg(channel, type).arg(value).arg(threshold));
+    });
+    //恢复的信号
+    connect(&m_alarm, &AlarmManager::alarmRecovered, this, [this](const QString &channel) {
+        // 温度恢复正常后，界面还原
+        if (m_valueLabels.contains(channel)) {
+            m_valueLabels[channel]->setStyleSheet("font-size:24px;font-weight:600;color:#1f2937;");
+        }
+        statusBar()->showMessage(channel + " 已恢复正常");
     });
 }
 
@@ -148,8 +174,13 @@ void MainWindow::initConnectionPage()
     ui->spinInterval->setValue(500);
 
 
+    //创建温度映射
+    m_valueLabels.insert("温度1", ui->temp1);
+    m_valueLabels.insert("温度2", ui->temp2);
+    m_valueLabels.insert("温度3", ui->temp3);
+    m_valueLabels.insert("压力", ui->pressure);
     // 初始化阈值
-    ui->temp1_LowRange->setValue(0.0);
+    ui->temp1_lowRange->setValue(0.0);
     ui->temp1_highRange->setValue(60.0);
     ui->temp2_lowRange->setValue(0.0);
     ui->temp2_highRange->setValue(60.0);
@@ -241,6 +272,34 @@ QTableWidgetItem* MainWindow::makeCell(const QString& text)
     return item;
 }
 
+void MainWindow::refreshAlarmTable()
+{
+    QList<QVariantMap> rows = m_db.queryAlarms();
+
+    // 先清空旧表格内容
+    ui->alarmTable->clearContents();
+    // 设置表格总行数
+    ui->alarmTable->setRowCount(rows.size());
+
+    for (int row = 0; row < rows.size(); ++row) {
+        const QVariantMap item = rows.at(row);
+        ui->alarmTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
+        ui->alarmTable->setItem(row, 1, makeCell(item["channel"].toString()));
+        ui->alarmTable->setItem(row, 2, makeCell(item["alarm_type"].toString()));
+        ui->alarmTable->setItem(row, 3, makeCell(QString::number(item["value"].toDouble(), 'f', 1)));
+        ui->alarmTable->setItem(row, 4, makeCell(QString::number(item["threshold"].toDouble(), 'f', 1)));
+    }
+}
+
+void MainWindow::applyAlarmLimits()
+{
+    // 阈值直接从界面读取，用户改完后下一次采样就会生效。
+    m_alarm.setLimit("温度1", ui->temp1_lowRange->value(), ui->temp1_highRange->value());
+    m_alarm.setLimit("温度2", ui->temp2_lowRange->value(),ui->temp2_highRange->value());
+    m_alarm.setLimit("温度3", ui->temp3_lowRange->value(), ui->temp3_highRange->value());
+    m_alarm.setLimit("压力", ui->pressure_lowRange->value(), ui->pressure_highRange->value());
+}
+
 
 //点击了查询按钮
 void MainWindow::on_queryButton_clicked()
@@ -274,20 +333,6 @@ void MainWindow::on_queryButton_clicked()
 void MainWindow::on_refreshButton_clicked()
 {
     qDebug() << "点击了刷新报警记按钮";
-    QList<QVariantMap> rows = m_db.queryAlarms();
-
-    // 先清空旧表格内容
-    ui->alarmTable->clearContents();
-    // 设置表格总行数
-    ui->alarmTable->setRowCount(rows.size());
-
-    for (int row = 0; row < rows.size(); ++row) {
-        const QVariantMap item = rows.at(row);
-        ui->alarmTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
-        ui->alarmTable->setItem(row, 1, makeCell(item["channel"].toString()));
-        ui->alarmTable->setItem(row, 2, makeCell(item["alarm_type"].toString()));
-        ui->alarmTable->setItem(row, 3, makeCell(QString::number(item["value"].toDouble(), 'f', 1)));
-        ui->alarmTable->setItem(row, 4, makeCell(QString::number(item["threshold"].toDouble(), 'f', 1)));
-    }
+    refreshAlarmTable();
 }
 

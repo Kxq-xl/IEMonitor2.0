@@ -32,6 +32,9 @@ public:
     // 查询最近的报警记录。
     QList<QVariantMap> queryAlarms();
 
+    // 保存一条报警记录。
+    bool insertAlarmRecord(const QString &channel, const QString &type, double value, double threshold);
+
     // 返回最近一次数据库错误，方便界面提示。
     QString lastError() const;
 signals:

@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="connectionPage">
        <attribute name="title">
@@ -247,7 +247,7 @@
           <widget class="QDoubleSpinBox" name="temp1_highRange"/>
          </item>
          <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="temp1_LowRange"/>
+          <widget class="QDoubleSpinBox" name="temp1_lowRange"/>
          </item>
          <item row="2" column="1" rowspan="3">
           <widget class="QDoubleSpinBox" name="temp2_lowRange"/>
