@@ -24,258 +24,239 @@
        <attribute name="title">
         <string>Tab 1</string>
        </attribute>
-       <widget class="QGroupBox" name="conParaGBox">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>681</width>
-          <height>101</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>连接参数</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_IP">
-           <property name="text">
-            <string>IP:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="ipLine"/>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_Port">
-           <property name="text">
-            <string>端口</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QSpinBox" name="spinPort"/>
-         </item>
-         <item row="0" column="4">
-          <widget class="QLabel" name="label_Addr">
-           <property name="text">
-            <string>从站地址</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="5">
-          <widget class="QSpinBox" name="spinSlaveAddr"/>
-         </item>
-         <item row="0" column="6" colspan="2">
-          <widget class="QLabel" name="label_Cycle">
-           <property name="text">
-            <string>采集周期</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="8">
-          <widget class="QSpinBox" name="spinInterval"/>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <widget class="QPushButton" name="conTcp">
-           <property name="text">
-            <string>连接 ModbusTCP</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2" colspan="3">
-          <widget class="QPushButton" name="pushButton">
-           <property name="text">
-            <string>启动内置模拟</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="5" colspan="2">
-          <widget class="QPushButton" name="disCon">
-           <property name="text">
-            <string>断开</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="7" colspan="2">
-          <widget class="QLabel" name="label_IsCon">
-           <property name="text">
-            <string>已断开</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QGroupBox" name="dataGBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>110</y>
-          <width>171</width>
-          <height>171</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>实时数据</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_2">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_1">
-           <property name="text">
-            <string>温度1</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="temp1">
-           <property name="text">
-            <string>-- ℃</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>温度2</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="temp2">
-           <property name="text">
-            <string>-- ℃</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>温度3</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLabel" name="temp3">
-           <property name="text">
-            <string>-- ℃</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>压力</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QLabel" name="pressure">
-           <property name="text">
-            <string>-- Kpa</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QGroupBox" name="alarmGBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>300</y>
-          <width>171</width>
-          <height>191</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>报警阈值</string>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_9">
-           <property name="text">
-            <string>温度1</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>高限</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>通道</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_8">
-           <property name="text">
-            <string>温度2</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>低限</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0" rowspan="3">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>温度3</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>压力</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2" rowspan="3">
-          <widget class="QDoubleSpinBox" name="temp2_highRange"/>
-         </item>
-         <item row="1" column="2">
-          <widget class="QDoubleSpinBox" name="temp1_highRange"/>
-         </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="temp1_lowRange"/>
-         </item>
-         <item row="2" column="1" rowspan="3">
-          <widget class="QDoubleSpinBox" name="temp2_lowRange"/>
-         </item>
-         <item row="5" column="1">
-          <widget class="QDoubleSpinBox" name="temp3_lowRange"/>
-         </item>
-         <item row="5" column="2">
-          <widget class="QDoubleSpinBox" name="temp3_highRange"/>
-         </item>
-         <item row="7" column="1">
-          <widget class="QDoubleSpinBox" name="pressure_lowRange"/>
-         </item>
-         <item row="7" column="2">
-          <widget class="QDoubleSpinBox" name="pressure_highRange"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QChartView" name="graphicsView">
-        <property name="geometry">
-         <rect>
-          <x>190</x>
-          <y>110</y>
-          <width>481</width>
-          <height>381</height>
-         </rect>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <layout class="QGridLayout" name="gridLayout" rowstretch="0,1,0" columnstretch="1,4">
+          <item row="0" column="0" colspan="2">
+           <widget class="QGroupBox" name="conParaGBox">
+            <property name="title">
+             <string>连接参数</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_8">
+             <item row="0" column="6" colspan="2">
+              <widget class="QLabel" name="label_Cycle">
+               <property name="text">
+                <string>采集周期</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_Addr">
+               <property name="text">
+                <string>从站地址</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="5" colspan="2">
+              <widget class="QPushButton" name="disCon">
+               <property name="text">
+                <string>断开</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="ipLine"/>
+             </item>
+             <item row="1" column="7" colspan="2">
+              <widget class="QLabel" name="label_IsCon">
+               <property name="text">
+                <string>已断开</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_Port">
+               <property name="text">
+                <string>端口</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QPushButton" name="conTcp">
+               <property name="text">
+                <string>连接 ModbusTCP</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_IP">
+               <property name="text">
+                <string>IP:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="8">
+              <widget class="QSpinBox" name="spinInterval"/>
+             </item>
+             <item row="1" column="2" colspan="3">
+              <widget class="QPushButton" name="pushButton">
+               <property name="text">
+                <string>启动内置模拟</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="5">
+              <widget class="QSpinBox" name="spinSlaveAddr"/>
+             </item>
+             <item row="0" column="3">
+              <widget class="QSpinBox" name="spinPort"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QGroupBox" name="dataGBox">
+            <property name="title">
+             <string>实时数据</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_2" rowminimumheight="0,0,0,0">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_1">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度2&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLabel" name="temp2">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="temp3">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;压力&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="pressure">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- Kpa&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="temp1">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="1" rowspan="2">
+           <widget class="QChartView" name="graphicsView"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QGroupBox" name="alarmGBox">
+            <property name="title">
+             <string>报警阈值</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>温度1</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>高限</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>通道</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>温度2</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>低限</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" rowspan="3">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>温度3</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>压力</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2" rowspan="3">
+              <widget class="QDoubleSpinBox" name="temp2_highRange"/>
+             </item>
+             <item row="1" column="2">
+              <widget class="QDoubleSpinBox" name="temp1_highRange"/>
+             </item>
+             <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="temp1_lowRange"/>
+             </item>
+             <item row="2" column="1" rowspan="3">
+              <widget class="QDoubleSpinBox" name="temp2_lowRange"/>
+             </item>
+             <item row="5" column="1">
+              <widget class="QDoubleSpinBox" name="temp3_lowRange"/>
+             </item>
+             <item row="5" column="2">
+              <widget class="QDoubleSpinBox" name="temp3_highRange"/>
+             </item>
+             <item row="7" column="1">
+              <widget class="QDoubleSpinBox" name="pressure_lowRange"/>
+             </item>
+             <item row="7" column="2">
+              <widget class="QDoubleSpinBox" name="pressure_highRange"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="historyPage">
        <attribute name="title">

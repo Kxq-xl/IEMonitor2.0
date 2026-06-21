@@ -86,8 +86,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::initUI()
 {
-    this->setWindowTitle("笑脸工业设备数据监控上位机");
-
+    this->setWindowTitle("笑脸工业设备数据监控上位机1.0");
+    resize(1180, 760);
     ui->tabWidget->setTabText(0, "实时监控");
     ui->tabWidget->setTabText(1, "历史数据");
     ui->tabWidget->setTabText(2, "报警记录");
@@ -179,6 +179,27 @@ void MainWindow::initConnectionPage()
     m_valueLabels.insert("温度2", ui->temp2);
     m_valueLabels.insert("温度3", ui->temp3);
     m_valueLabels.insert("压力", ui->pressure);
+
+    //将上限下限解除
+    ui->temp1_lowRange->setRange(-INFINITY, INFINITY);
+    ui->temp1_highRange->setRange(-INFINITY, INFINITY);
+    ui->temp2_lowRange->setRange(-INFINITY, INFINITY);
+    ui->temp2_highRange->setRange(-INFINITY, INFINITY);
+    ui->temp3_lowRange->setRange(-INFINITY, INFINITY);
+    ui->temp3_highRange->setRange(-INFINITY, INFINITY);
+    ui->pressure_lowRange->setRange(-INFINITY, INFINITY);
+    ui->pressure_highRange->setRange(-INFINITY, INFINITY);
+
+    //设置 温度 label 的字体大小
+    ui->temp1->setMinimumHeight(46);
+    ui->temp1->setStyleSheet("font-size:24px;font-weight:600;color:#1f2937;");
+    ui->temp2->setMinimumHeight(46);
+    ui->temp2->setStyleSheet("font-size:24px;font-weight:600;color:#1f2937;");
+    ui->temp3->setMinimumHeight(46);
+    ui->temp3->setStyleSheet("font-size:24px;font-weight:600;color:#1f2937;");
+    ui->pressure->setMinimumHeight(46);
+    ui->pressure->setStyleSheet("font-size:24px;font-weight:600;color:#1f2937;");
+
     // 初始化阈值
     ui->temp1_lowRange->setValue(0.0);
     ui->temp1_highRange->setValue(60.0);
