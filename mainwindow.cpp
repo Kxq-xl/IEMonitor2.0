@@ -7,7 +7,15 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    //初始化 UI 界面
     initUI();
+
+    //打开数据库
+    if (!m_db.open())
+    {
+        QMessageBox::warning(this, "数据库初始化失败", m_db.lastError());
+        //return;
+    }
 
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
@@ -50,8 +58,10 @@ void MainWindow::initUI()
 
     // 初始化实时监控的连接参数、实时数据、阈值、曲线。
     initConnectionPage();
-    // 初始化折线图
-    initChart();
+
+    // 初始化历史记录的页面
+    initHistoryPage();
+
 }
 
 void MainWindow::initChart()
@@ -134,6 +144,24 @@ void MainWindow::initConnectionPage()
     ui->temp3_highRange->setValue(60.0);
     ui->pressure_lowRange->setValue(0.0);
     ui->pressure_highRange->setValue(12.0);
+
+
+    // 初始化折线图
+    initChart();
+}
+
+void MainWindow::initHistoryPage()
+{
+    //默认从前一个小时
+    ui->startEdit->setDateTime(QDateTime::currentDateTime().addSecs(-3600));
+    ui->startEdit->setDisplayFormat("yyyy-MM-dd HH:mm:ss");
+    ui->endEdit->setDateTime(QDateTime::currentDateTime());
+    ui->endEdit->setDisplayFormat("yyyy-MM-dd HH:mm:ss");
+
+    ui->historyTable->setColumnCount(5);
+    ui->historyTable->setHorizontalHeaderLabels({"时间", "温度1", "温度2", "温度3", "压力"});
+    //将列全部铺满
+    ui->historyTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
 void MainWindow::appendChartPoint(const SensorData &data)
@@ -181,4 +209,34 @@ void MainWindow::on_pushButton_clicked()
     //模拟数据。
 }
 
+
+//点击了查询按钮
+void MainWindow::on_queryButton_clicked()
+{
+    qDebug() << "点击了查询按钮";
+    QList<QVariantMap> rows = m_db.queryHistory(ui->startEdit->dateTime(), ui->endEdit->dateTime());
+
+    // 封装生成居中只读单元格 匿名函数
+    auto makeCell = [](const QString& text)->QTableWidgetItem*{
+        QTableWidgetItem *item = new QTableWidgetItem(text);
+        item->setTextAlignment(Qt::AlignCenter);
+        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+        return item;
+    };
+
+
+    // 先清空旧表格内容
+    ui->historyTable->clearContents();
+    // 设置表格总行数
+    ui->historyTable->setRowCount(rows.size());
+
+    for (int row = 0; row < rows.size(); ++row) {
+        const QVariantMap item = rows.at(row);
+        ui->historyTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
+        ui->historyTable->setItem(row, 1, makeCell(QString::number(item["temp1"].toDouble(), 'f', 1)));
+        ui->historyTable->setItem(row, 2, makeCell(QString::number(item["temp2"].toDouble(), 'f', 1)));
+        ui->historyTable->setItem(row, 3, makeCell(QString::number(item["temp3"].toDouble(), 'f', 1)));
+        ui->historyTable->setItem(row, 4, makeCell(QString::number(item["pressure"].toDouble(), 'f', 1)));
+    }
+}
 

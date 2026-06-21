@@ -7,7 +7,8 @@
 #include <QValueAxis>
 #include "modbuscomm.h"
 #include "datamodel.h"
-
+#include "databasemanager.h"
+#include <QMessageBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -31,6 +32,9 @@ public:
     // 初始化“实时监控”页面：连接参数、实时数据、阈值、曲线。
     void initConnectionPage();
 
+    // 初始化历史记录的页面
+    void initHistoryPage();
+
     // 把新采样点追加到实时趋势曲线。
     void appendChartPoint(const SensorData &data);
 
@@ -42,12 +46,16 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_queryButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     //modbus 通信
     ModbusComm m_comm;
     //曲线横坐标计数器
     int m_sampleIndex = 0;
+    //数据库
+    DatabaseManager m_db;
 
     QChart *m_chart = nullptr;
     QLineSeries *m_temp1Series = nullptr;
