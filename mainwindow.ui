@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>702</width>
-    <height>570</height>
+    <height>589</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,151 +24,9 @@
        <attribute name="title">
         <string>Tab 1</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <layout class="QGridLayout" name="gridLayout" rowstretch="0,1,0" columnstretch="1,4">
-          <item row="0" column="0" colspan="2">
-           <widget class="QGroupBox" name="conParaGBox">
-            <property name="title">
-             <string>连接参数</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_8">
-             <item row="0" column="6" colspan="2">
-              <widget class="QLabel" name="label_Cycle">
-               <property name="text">
-                <string>采集周期</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="4">
-              <widget class="QLabel" name="label_Addr">
-               <property name="text">
-                <string>从站地址</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="5" colspan="2">
-              <widget class="QPushButton" name="disCon">
-               <property name="text">
-                <string>断开</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="ipLine"/>
-             </item>
-             <item row="1" column="7" colspan="2">
-              <widget class="QLabel" name="label_IsCon">
-               <property name="text">
-                <string>已断开</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QLabel" name="label_Port">
-               <property name="text">
-                <string>端口</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0" colspan="2">
-              <widget class="QPushButton" name="conTcp">
-               <property name="text">
-                <string>连接 ModbusTCP</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_IP">
-               <property name="text">
-                <string>IP:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="8">
-              <widget class="QSpinBox" name="spinInterval"/>
-             </item>
-             <item row="1" column="2" colspan="3">
-              <widget class="QPushButton" name="pushButton">
-               <property name="text">
-                <string>启动内置模拟</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="5">
-              <widget class="QSpinBox" name="spinSlaveAddr"/>
-             </item>
-             <item row="0" column="3">
-              <widget class="QSpinBox" name="spinPort"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QGroupBox" name="dataGBox">
-            <property name="title">
-             <string>实时数据</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_2" rowminimumheight="0,0,0,0">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_1">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_2">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度2&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLabel" name="temp2">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QLabel" name="temp3">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;压力&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QLabel" name="pressure">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- Kpa&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLabel" name="temp1">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="gridLayout_4" rowstretch="0,1,0,0" columnstretch="1,4">
           <item row="1" column="1" rowspan="2">
            <widget class="QChartView" name="graphicsView"/>
           </item>
@@ -250,6 +108,280 @@
              </item>
              <item row="7" column="2">
               <widget class="QDoubleSpinBox" name="pressure_highRange"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QPushButton" name="pauseChartButton">
+            <property name="text">
+             <string>暂停曲线</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QGroupBox" name="dataGBox">
+            <property name="title">
+             <string>实时数据</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_2" rowminimumheight="0,0,0,0">
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;压力&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度2&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度3&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="pressure">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- Kpa&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLabel" name="temp3">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_1">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;温度1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLabel" name="temp2">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLabel" name="temp1">
+               <property name="text">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:18pt;&quot;&gt;-- ℃&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QGroupBox" name="conParaGBox">
+            <property name="title">
+             <string>连接参数</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="4" column="6">
+              <widget class="QLabel" name="label_Port_4">
+               <property name="text">
+                <string>重连间隔</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="7" colspan="2">
+              <widget class="QSpinBox" name="spinPort"/>
+             </item>
+             <item row="6" column="12">
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>设备状态</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="8">
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>通信状态</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_IP">
+               <property name="text">
+                <string>IP:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="9">
+              <widget class="QLabel" name="label_Addr">
+               <property name="text">
+                <string>从站地址</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="13">
+              <widget class="QComboBox" name="stopBitsCombo"/>
+             </item>
+             <item row="4" column="10">
+              <widget class="QSpinBox" name="maxReconnectSpin"/>
+             </item>
+             <item row="4" column="9">
+              <widget class="QLabel" name="label_Addr_3">
+               <property name="text">
+                <string>最大重连</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="9">
+              <widget class="QLabel" name="label_dataBits">
+               <property name="text">
+                <string>数据位</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="12">
+              <widget class="QLabel" name="label_stopBits">
+               <property name="text">
+                <string>停止位</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="13">
+              <widget class="QSpinBox" name="spinInterval"/>
+             </item>
+             <item row="6" column="2" colspan="2">
+              <widget class="QPushButton" name="conTcp">
+               <property name="text">
+                <string>链接/启动</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="13">
+              <widget class="QSpinBox" name="alarmDelaySpin"/>
+             </item>
+             <item row="1" column="6">
+              <widget class="QLabel" name="label_Port">
+               <property name="text">
+                <string>端口</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3" colspan="2">
+              <widget class="QRadioButton" name="radioButton_2">
+               <property name="text">
+                <string>Modbus RTU</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="7" colspan="2">
+              <widget class="QSpinBox" name="reconnectIntervalSpin"/>
+             </item>
+             <item row="3" column="16">
+              <widget class="QComboBox" name="parityCombo"/>
+             </item>
+             <item row="3" column="14">
+              <widget class="QLabel" name="label_check">
+               <property name="text">
+                <string>校验</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="7" colspan="2">
+              <widget class="QComboBox" name="baudCombo"/>
+             </item>
+             <item row="6" column="4" colspan="2">
+              <widget class="QPushButton" name="pushButton">
+               <property name="text">
+                <string>启动内置模拟</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="9">
+              <widget class="QLabel" name="statusLabel">
+               <property name="text">
+                <string>已断开</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="6" colspan="2">
+              <widget class="QPushButton" name="disCon">
+               <property name="text">
+                <string>断开</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="6">
+              <widget class="QLabel" name="label_Baud">
+               <property name="text">
+                <string>波特率</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_COM">
+               <property name="text">
+                <string>串口:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="12">
+              <widget class="QLabel" name="label_Cycle">
+               <property name="text">
+                <string>采集周期</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" colspan="3">
+              <widget class="QRadioButton" name="radioButton">
+               <property name="text">
+                <string>Modbus TCP</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="10">
+              <widget class="QComboBox" name="dataBitsCombo"/>
+             </item>
+             <item row="1" column="10">
+              <widget class="QSpinBox" name="spinSlaveAddr"/>
+             </item>
+             <item row="4" column="12">
+              <widget class="QLabel" name="label_Cycle_3">
+               <property name="text">
+                <string>报警延时</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="13" colspan="2">
+              <widget class="QLabel" name="onlineLabel">
+               <property name="text">
+                <string>离线</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_IP_3">
+               <property name="text">
+                <string>存储周期</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1" colspan="5">
+              <widget class="QLineEdit" name="ipLine"/>
+             </item>
+             <item row="3" column="1" colspan="5">
+              <widget class="QComboBox" name="serialPortCombo"/>
+             </item>
+             <item row="4" column="1" colspan="5">
+              <widget class="QSpinBox" name="saveIntervalSpin"/>
              </item>
             </layout>
            </widget>

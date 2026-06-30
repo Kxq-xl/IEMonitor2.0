@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QSerialPortInfo>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -173,6 +175,35 @@ void MainWindow::initConnectionPage()
     ui->spinInterval->setSuffix(" ms");
     ui->spinInterval->setValue(500);
 
+    // 初始化 RTU 连接的参数
+    // 串口
+    for (const QSerialPortInfo &info : QSerialPortInfo::availablePorts()) {
+        ui->serialPortCombo->addItem(info.portName());
+    }
+    //波特率，数据位，停止位，校验
+    ui->baudCombo->addItems({"9600", "19200", "38400", "57600", "115200"});
+    ui->dataBitsCombo->addItems({"8", "7"});
+    ui->stopBitsCombo->addItems({"1", "2"});
+    ui->parityCombo->addItems({"None", "Even", "Odd"});
+
+    // 存储周期
+    ui->saveIntervalSpin->setRange(1, 3600);
+    ui->saveIntervalSpin->setValue(10);
+    ui->saveIntervalSpin->setSuffix(" s");
+
+    //重连间隔
+    ui->reconnectIntervalSpin->setRange(1000, 60000);
+    ui->reconnectIntervalSpin->setValue(3000);
+    ui->reconnectIntervalSpin->setSuffix(" ms");
+
+    //最大重连
+    ui->maxReconnectSpin->setRange(0, 100);
+    ui->maxReconnectSpin->setValue(5);
+
+    //报警延时
+    ui->alarmDelaySpin->setRange(0, 60000);
+    ui->alarmDelaySpin->setValue(1000);
+    ui->alarmDelaySpin->setSuffix(" ms");
 
     //创建温度映射
     m_valueLabels.insert("温度1", ui->temp1);
