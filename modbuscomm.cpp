@@ -4,7 +4,8 @@
 ModbusComm::ModbusComm(QObject *parent)
     : QObject{parent}
 {
-    connect(&m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+    //移至startPolling中去
+    //connect(&m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
 }
 
 ModbusComm::~ModbusComm()
@@ -132,7 +133,12 @@ void ModbusComm::poll()
             for (uint i = 0; i < unit.valueCount(); ++i) {
                 values.append(unit.value(i));
             }
-            emit dataReady(parseRegisters(values));
+
+
+            emit onlineChanged(true);
+
+            // 通信层不直接解释业务含义，只把原始寄存器交给数据处理模块。
+            emit dataReady(m_processor.fromRegisters(values));
         });
     }
     else
@@ -162,7 +168,8 @@ void ModbusComm::setupClient(QModbusClient *client)
             //通信状态
             emit statusChanged(m_mode == CommMode::Tcp ? "Modbus TCP 已连接" : "Modbus RTU 已连接");
 
-            m_pollTimer.setInterval(m_intervalMs);
+            //m_pollTimer.setInterval(m_intervalMs); //移至startPolling中去
+            startPolling();
             m_pollTimer.start();
         }
         else if (m_client->state() == QModbusDevice::UnconnectedState)
@@ -182,20 +189,9 @@ void ModbusComm::setupClient(QModbusClient *client)
     });
 }
 
-SensorData ModbusComm::parseRegisters(const QVector<quint16> &values) const
+void ModbusComm::startPolling()
 {
-    SensorData data;
-    data.timestamp = QDateTime::currentDateTime();
-
-    // 约定：寄存器原始值除以 10 得到工程量。
-    // 例如 Modbus Slave 中 253 表示 25.3 摄氏度。
-    if (values.size() >= 4) {
-        data.temp1 = values.at(0) / 10.0;
-        data.temp2 = values.at(1) / 10.0;
-        data.temp3 = values.at(2) / 10.0;
-        data.pressure = values.at(3) / 10.0;
-    }
-    return data;
+    disconnect(&m_pollTimer, nullptr, this, nullptr);
+    connect(&m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+    m_pollTimer.setInterval(m_intervalMs);
 }
-
-

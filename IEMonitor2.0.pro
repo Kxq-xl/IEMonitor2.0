@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     alarmmanager.cpp \
     databasemanager.cpp \
+    dataprocessor.cpp \
     main.cpp \
     mainwindow.cpp \
     modbuscomm.cpp
@@ -19,6 +20,7 @@ HEADERS += \
     alarmmanager.h \
     databasemanager.h \
     datamodel.h \
+    dataprocessor.h \
     mainwindow.h \
     modbuscomm.h
 

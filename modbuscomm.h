@@ -12,6 +12,7 @@
 
 
 #include "datamodel.h"
+#include "dataprocessor.h"
 
 // modbus 协议， TCP， RTU，自动模拟
 enum class CommMode
@@ -48,7 +49,6 @@ public:
                     int slaveId,
                     int intervalMs);
 
-
     // 断开真实设备或停止内置模拟。
     void disconnectDevice();
 
@@ -72,8 +72,9 @@ private:
 
     // 统一设置 TCP/RTU 客户端的状态信号、错误信号和超时参数。
     void setupClient(QModbusClient *client);
-    // 把 Modbus 原始寄存器值转换成温度、压力等工程量。
-    SensorData parseRegisters(const QVector<quint16> &values) const;
+
+    // 连接成功后启动定时采集。
+    void startPolling();
 
     // 当前 TCP 或 RTU 客户端，基类指针统一管理。
     QModbusClient *m_client = nullptr;
@@ -91,8 +92,11 @@ private:
     QSerialPort::StopBits m_rtuStopBits = QSerialPort::OneStop;
     QSerialPort::Parity m_rtuParity = QSerialPort::NoParity;
 
-
     int m_intervalMs;
+
+    // 原始寄存器到工程量的转换器。
+    DataProcessor m_processor;
+
     //采集定时器
     QTimer m_pollTimer;
     //Modbus 从站地址

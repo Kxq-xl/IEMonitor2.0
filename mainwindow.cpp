@@ -47,19 +47,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
         // 采集到一包数据后，同时更新数值、曲线、报警逻辑。
-
-        // 测试数据是否获取成功
-        // qDebug() << data.timestamp << " ";
-        // qDebug() << data.temp1 << " ";
-        // qDebug() << data.temp2 << " ";
-        // qDebug() << data.temp3 << " ";
-        // qDebug() << data.pressure << " ";
         m_lastData = data;
         //1. 更新实时数
-        ui->temp1->setText(QString::number(data.temp1) + " ℃");
-        ui->temp2->setText(QString::number(data.temp2) + " ℃");
-        ui->temp3->setText(QString::number(data.temp3) + " ℃");
-        ui->pressure->setText(QString::number(data.pressure) + " ℃");
+        updateSensorLabel("温度1", data.temp1, "℃", data.valid);
+        updateSensorLabel("温度2", data.temp2, "℃", data.valid);
+        updateSensorLabel("温度3", data.temp3, "℃", data.valid);
+        updateSensorLabel("压力", data.pressure, "kPa", data.valid);
 
         //2. 更新图表
         appendChartPoint(data);
@@ -68,6 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
         applyAlarmLimits();
         //3. 是否报警
         m_alarm.check(data);
+        if (!data.valid) {
+            statusBar()->showMessage("无效数据：" + data.invalidReason);
+        }
     });
 
     //警报来的信号
@@ -279,8 +275,22 @@ void MainWindow::initAlarmPage()
     ui->alarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
+void MainWindow::updateSensorLabel(const QString &name, double value, const QString &unit, bool valid)
+{
+    if (!m_valueLabels.contains(name)) {
+        return;
+    }
+
+    m_valueLabels[name]->setText(valid ? QString::number(value, 'f', 1) + " " + unit : "无效");
+}
+
 void MainWindow::appendChartPoint(const SensorData &data)
 {
+    //暂停 或者 数据无效，不往图表中追加数据
+    if (m_chartPaused || !data.valid){
+        return;
+    }
+
     ++m_sampleIndex;
     qDebug() << "更新图表";
 
@@ -380,6 +390,8 @@ void MainWindow::refreshAlarmTable()
 
 void MainWindow::applyAlarmLimits()
 {
+    //设置报警时延
+    m_alarm.setDelayMs(ui->alarmDelaySpin->value());
     // 阈值直接从界面读取，用户改完后下一次采样就会生效。
     m_alarm.setLimit("温度1", ui->temp1_lowRange->value(), ui->temp1_highRange->value());
     m_alarm.setLimit("温度2", ui->temp2_lowRange->value(),ui->temp2_highRange->value());
@@ -421,5 +433,13 @@ void MainWindow::on_refreshButton_clicked()
 {
     qDebug() << "点击了刷新报警记按钮";
     refreshAlarmTable();
+}
+
+void MainWindow::on_pauseChartButton_clicked()
+{
+    qDebug() << "点击了图标暂停按钮";
+    // 曲线暂停按钮：只影响曲线追加，不影响采集和数据库保存。
+    m_chartPaused = !m_chartPaused;
+    ui->pauseChartButton->setText(m_chartPaused ? "继续曲线" : "暂停曲线");
 }
 

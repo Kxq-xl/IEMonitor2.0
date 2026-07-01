@@ -40,6 +40,9 @@ public:
     // 初始化报警界面
     void initAlarmPage();
 
+    // 更新某个通道的实时数值标签；无效数据会显示为“无效”。
+    void updateSensorLabel(const QString &name, double value, const QString &unit, bool valid);
+
     // 把新采样点追加到实时趋势曲线。
     void appendChartPoint(const SensorData &data);
 
@@ -64,12 +67,16 @@ private slots:
 
     void on_refreshButton_clicked();
 
+    void on_pauseChartButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     //modbus 通信
     ModbusComm m_comm;
-    //曲线横坐标计数器
+    //曲线横坐标计数器 表示第几次采样。
     int m_sampleIndex = 0;
+    // 曲线暂停标记；暂停时仍采集数据，但不追加曲线点。
+    bool m_chartPaused = false;
     //数据库
     DatabaseManager m_db;
     //数据库保存定时器

@@ -16,6 +16,12 @@ struct SensorData
     double temp2 = 0.0;
     double temp3 = 0.0;
     double pressure = 0.0;
+
+    // 数据有效性标记。
+    // DataProcessor 做量程判断后，如果发现数据明显异常，会把 valid 置为 false。
+    // UI 收到无效数据后不画曲线、不参与报警，避免错误数据污染显示和记录。
+    bool valid = true;
+    QString invalidReason;
 };
 
 
