@@ -32,6 +32,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     applyAlarmLimits();
 
+    // 通信状态
+    connect(&m_comm, &ModbusComm::statusChanged, this, [this](const QString &status) {
+        ui->statusLabel->setText(status);
+        statusBar()->showMessage(status);
+    });
+    // 设备状态
+    connect(&m_comm, &ModbusComm::onlineChanged, this, [this](bool online) {
+        ui->onlineLabel->setText(online ? "在线" : "离线");
+        ui->onlineLabel->setStyleSheet(online ? "color:#16a34a;font-weight:700;" : "color:#dc2626;font-weight:700;");
+    });
+
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
@@ -292,11 +303,35 @@ void MainWindow::appendChartPoint(const SensorData &data)
 
 void MainWindow::on_conTcp_clicked()
 {
-    qDebug () << "点击了 TCP 连接按钮";
-    // 点击“连接 Modbus TCP”后，软件开始从外部 Modbus Slave/PLC 采集数据。
+    // 点击连接时先保存当前界面配置，再把连接任务投递给通信线程。
+    //saveSettings();
+    applyAlarmLimits();
     m_sampleIndex = 0;
-    m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), ui->spinInterval->value());
+    //RuntimeConfig config = runtimeConfig();
 
+    qDebug () << "点击了连接按钮";
+
+
+    if (ui->tcpMode->isChecked()) {
+        // TCP 模式：IP + 端口 + 从站地址。
+        // 点击“连接 Modbus TCP”后，软件开始从外部 Modbus Slave/PLC 采集数据。
+        qDebug() << "选择了 TCP 模式连接";
+        m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), ui->spinInterval->value());
+    } else if (ui->rtuMode->isChecked()) {
+        // RTU 模式：串口参数 + 从站地址。
+        qDebug() << "选择了 RTU 模式连接";
+        m_comm.connectRtu(ui->serialPortCombo->currentText()
+                          ,ui->baudCombo->currentText().toInt()
+                          ,(QSerialPort::DataBits)ui->dataBitsCombo->currentText().toInt()
+                          ,(QSerialPort::StopBits)ui->stopBitsCombo->currentText().toInt()
+                          ,(QSerialPort::Parity)ui->parityCombo->currentText().toInt()
+                          ,ui->spinSlaveAddr->value(), ui->spinInterval->value());
+
+    } else {
+        // 模拟模式：不用外部设备，由通信线程定时生成假数据。
+    }
+
+    //setConnectedUi(true);
 }
 
 

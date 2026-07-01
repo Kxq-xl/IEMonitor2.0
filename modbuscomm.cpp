@@ -16,41 +16,64 @@ void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, int interv
 {
     // 重新连接前先断开旧连接，避免多个客户端同时读同一个设备。
     disconnectDevice();
+
+    m_mode = CommMode::Tcp;
+    m_tcpIp = ip;
+    m_tcpPort = port;
     m_slaveId = slaveId;
+    m_intervalMs = intervalMs;
+
+    //m_config = config;    //配置文件不实现
+
     // Modbus TCP 最关键的三个参数：IP、端口、从站地址。
     // IP/端口定位设备，从站地址定位设备内部的 Modbus 从站。
-    m_client = new QModbusTcpClient();
-    m_client->setConnectionParameter(QModbusDevice::NetworkAddressParameter, ip);
-    m_client->setConnectionParameter(QModbusDevice::NetworkPortParameter, port);
+    auto *client = new QModbusTcpClient(this);
+    client->setConnectionParameter(QModbusDevice::NetworkAddressParameter, ip);
+    client->setConnectionParameter(QModbusDevice::NetworkPortParameter, port);
+    setupClient(client);
 
-    //超时时间
-    m_client->setTimeout(1000);
-    //每一次 Modbus 读写请求，如果失败，自动重试 3 次，总共最多尝试 4 次。
-    m_client->setNumberOfRetries(3);
-
-    //设备状态改变时的 信号和槽
-    connect(m_client, &QModbusClient::stateChanged, this, [=](){
-        if (m_client->state() == QModbusDevice::ConnectedState)
-        {
-            qDebug() << "Modbus TCP 已连接";
-            m_pollTimer.setInterval(intervalMs);
-            m_pollTimer.start();
-        }
-        else if (m_client->state() == QModbusDevice::UnconnectedState)
-        {
-            qDebug() << "Modbus TCP 已断开";
-            m_pollTimer.stop();
-        }
-    });
-
-    //出错的信号和槽
-    connect(m_client, &QModbusClient::errorOccurred, this, [=](){
-        qDebug () << m_client->errorString();
-    });
 
     //连接设备
-    m_client->connectDevice();
+    if (!m_client->connectDevice()) {
+        qDebug() << "m_client->connectDevice() error:  " << m_client->errorString();
+    }
 }
+
+void ModbusComm::connectRtu(const QString &portName,
+                            int baudRate, QSerialPort::DataBits dataBits,
+                            QSerialPort::StopBits stopBits,
+                            QSerialPort::Parity parity,
+                            int slaveId,
+                            int intervalMs)
+{
+    // RTU 和 TCP 的上层接口保持一致，区别只在底层连接参数：
+    // TCP 用 IP/端口，RTU 用串口号、波特率、数据位、停止位、校验位。
+    m_mode = CommMode::Rtu;
+    m_rtuPortName = portName;
+    m_rtuBaudRate = baudRate;
+    m_rtuDataBits = dataBits;
+    m_rtuStopBits = stopBits;
+    m_rtuParity = parity;
+    m_slaveId = slaveId;
+    m_intervalMs = intervalMs;
+
+    //设置 RTU 连接参数
+    auto client = new QModbusRtuSerialClient(this);
+    client->setConnectionParameter(QModbusDevice::SerialPortNameParameter, portName);
+    client->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, baudRate);
+    client->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, dataBits);
+    client->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, stopBits);
+    client->setConnectionParameter(QModbusDevice::SerialParityParameter, parity);
+    setupClient(client);
+
+
+    //连接设备
+    if (!m_client->connectDevice()) {
+        qDebug() << "m_client->connectDevice() error:  " << m_client->errorString();
+    }
+}
+
+
 
 void ModbusComm::disconnectDevice()
 {
@@ -116,6 +139,47 @@ void ModbusComm::poll()
     {
         qDebug() << "请求未完成!";
     }
+}
+
+void ModbusComm::setupClient(QModbusClient *client)
+{
+
+    // 每次新建 TCP/RTU 客户端时，都统一在这里连接状态信号和错误信号。
+    // 这样 TCP 和 RTU 的状态处理、自动重连逻辑可以复用。
+    m_client = client;
+    //超时时间
+    m_client->setTimeout(1000);
+    //每一次 Modbus 读写请求，如果失败，自动重试 3 次，总共最多尝试 4 次。
+    m_client->setNumberOfRetries(3);
+
+    //设备状态改变时的 信号和槽
+    connect(m_client, &QModbusClient::stateChanged, this, [=](){
+        if (m_client->state() == QModbusDevice::ConnectedState)
+        {
+            //qDebug() << (m_mode == CommMode::Tcp ? "Modbus TCP 已连接" : "Modbus RTU 已连接");
+            //设备状态
+            emit onlineChanged(true);
+            //通信状态
+            emit statusChanged(m_mode == CommMode::Tcp ? "Modbus TCP 已连接" : "Modbus RTU 已连接");
+
+            m_pollTimer.setInterval(m_intervalMs);
+            m_pollTimer.start();
+        }
+        else if (m_client->state() == QModbusDevice::UnconnectedState)
+        {
+            m_pollTimer.stop();
+            qDebug() << (m_mode == CommMode::Tcp ? "Modbus TCP 已断开" : "Modbus RTU 已断开");
+            //设备状态
+            emit onlineChanged(false);
+            //通信状态
+            emit statusChanged("设备已断开，等待自动重连");
+        }
+    });
+
+    //出错的信号和槽
+    connect(m_client, &QModbusClient::errorOccurred, this, [=](){
+        qDebug () << m_client->errorString();
+    });
 }
 
 SensorData ModbusComm::parseRegisters(const QVector<quint16> &values) const
