@@ -96,6 +96,14 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
+    //存储周期变化后，立即重启保存定时器。
+    connect(ui->saveIntervalSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
+        if (m_saveTimer) {
+            m_saveTimer->start(value * 1000);
+        }
+    });
+
+
 }
 
 MainWindow::~MainWindow()
