@@ -1,6 +1,7 @@
 #include "modbuscomm.h"
 
 
+
 ModbusComm::ModbusComm(QObject *parent)
     : QObject{parent}
 {
@@ -19,6 +20,7 @@ ModbusComm::~ModbusComm()
 
 void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, const RuntimeConfig &config)
 {
+    qDebug() << "ModbusComm::connectTcp 线程 : " << QThread::currentThread();
     // reconnecting 用来区分“用户主动连接”和“自动重连”。
     // 主动连接要清零重连次数；自动重连不能清零，否则最大重连次数会失效。
     const bool reconnecting = m_reconnectTimer->isActive();
@@ -57,6 +59,8 @@ void ModbusComm::connectRtu(const QString &portName,
                             int slaveId,
                             const RuntimeConfig &config)
 {
+
+    qDebug() << "ModbusComm::connectRtu 线程 : " << QThread::currentThread();
     // RTU 和 TCP 的上层接口保持一致，区别只在底层连接参数：
     // TCP 用 IP/端口，RTU 用串口号、波特率、数据位、停止位、校验位。
     const bool reconnecting = m_reconnectTimer->isActive();
@@ -94,6 +98,11 @@ void ModbusComm::connectRtu(const QString &portName,
 
 void ModbusComm::disconnectDevice()
 {
+    // 已经断开，直接返回，不输出日志
+    if (!m_client || m_client->state() != QModbusDevice::ConnectedState)
+        return;
+
+    qDebug() << "ModbusComm::disconnectDevice 线程 : " << QThread::currentThread();
     // 停止采集和重连定时器。
     m_pollTimer->stop();
     m_reconnectTimer->stop();
@@ -121,6 +130,7 @@ void ModbusComm::poll()
         return;
     }
 
+    qDebug() << "ModbusComm::poll 线程 : " << QThread::currentThread();
     // qDebug() << "hello";
 
     // 上位机的核心动作：定时读取下位机的保持寄存器。
@@ -170,7 +180,6 @@ void ModbusComm::poll()
 
 void ModbusComm::reconnect()
 {
-    qDebug() << "尝试断线重连";
     // 自动重连只对真实 TCP/RTU 有意义，内置模拟不需要重连。
     if (m_mode == CommMode::None || m_mode == CommMode::Simulation) {
         m_reconnectTimer->stop();
@@ -182,6 +191,8 @@ void ModbusComm::reconnect()
         emit statusChanged("重连次数已达到上限");
         return;
     }
+    qDebug() << "尝试断线重连";
+    qDebug() << "ModbusComm::reconnect 线程 : " << QThread::currentThread();
 
     ++m_reconnectCount;
     qDebug() << QString("正在自动重连，第 %1 次").arg(m_reconnectCount);
@@ -196,6 +207,8 @@ void ModbusComm::reconnect()
 
 void ModbusComm::setupClient(QModbusClient *client)
 {
+
+    qDebug() << "ModbusComm::setupClient 线程 : " << QThread::currentThread();
 
     // 每次新建 TCP/RTU 客户端时，都统一在这里连接状态信号和错误信号。
     // 这样 TCP 和 RTU 的状态处理、自动重连逻辑可以复用。

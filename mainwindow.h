@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QTableWidgetItem>
 #include "alarmmanager.h"
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -39,6 +40,9 @@ public:
 
     // 初始化报警界面
     void initAlarmPage();
+
+    // 创建通信线程和数据库线程，并把工作对象移动到对应线程。
+    void initWorkers();
 
     // 从界面控件组装运行配置，传给通信线程使用。
     RuntimeConfig runtimeConfig() const;
@@ -74,14 +78,19 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    //modbus 通信
-    ModbusComm m_comm;
+    // 通信工作对象，实际运行在 m_commThread 中。
+    ModbusComm *m_comm = nullptr;
+    // 通信线程：处理 Modbus 连接、采集、写寄存器、重连。
+    QThread *m_commThread = nullptr;
     //曲线横坐标计数器 表示第几次采样。
     int m_sampleIndex = 0;
     // 曲线暂停标记；暂停时仍采集数据，但不追加曲线点。
     bool m_chartPaused = false;
-    //数据库
-    DatabaseManager m_db;
+
+    // 数据库工作对象，实际运行在 m_dbThread 中。
+    DatabaseManager *m_db = nullptr;
+    // 数据库线程：处理 SQLite 写入和查询。
+    QThread *m_dbThread = nullptr;
     //数据库保存定时器
     QTimer *m_saveTimer = nullptr;
     //最近一次采集到的数据
@@ -89,6 +98,9 @@ private:
 
     //报警模块
     AlarmManager m_alarm;
+
+    // 当前设备是否在线；用于控制断开后不再重复保存最后一包数据。
+    bool m_deviceOnline = false;
 
     //
     QMap<QString, QLabel *> m_valueLabels;

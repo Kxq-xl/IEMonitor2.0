@@ -11,47 +11,42 @@ MainWindow::MainWindow(QWidget *parent)
 
     //初始化 UI 界面
     initUI();
+    //通信和数据库 多线程
+    initWorkers();
 
-    //打开数据库
-    if (!m_db.open())
-    {
-        QMessageBox::warning(this, "数据库初始化失败", m_db.lastError());
-        //return;
-    }
-
-
-    m_saveTimer = new QTimer();
+    m_saveTimer = new QTimer(this);
     connect(m_saveTimer, &QTimer::timeout, this, [this]() {
-        if (m_comm.isConnected()) {
-            // 工业软件通常不会把每个采样点都入库，否则数据库增长太快。
-            // 这里每 2 秒保存一次，用来体验历史追溯功能。
-            m_db.insertSensorData(m_lastData);
+        if (m_deviceOnline && m_lastData.timestamp.isValid() && m_lastData.valid){
+            QMetaObject::invokeMethod(m_db, "insertSensorDataAsync", Qt::QueuedConnection,
+                                      Q_ARG(SensorData, m_lastData));
         }
     });
-    m_saveTimer->start(2000);
+    qDebug() << ui->saveIntervalSpin->value() * 1000 ;
+    m_saveTimer->start(ui->saveIntervalSpin->value() * 1000);
 
     applyAlarmLimits();
 
 
     // 通信线程 -> UI 线程：状态、在线、错误、写入结果。
     // 通信状态
-    connect(&m_comm, &ModbusComm::statusChanged, this, [this](const QString &status) {
+    connect(m_comm, &ModbusComm::statusChanged, this, [this](const QString &status) {
         ui->statusLabel->setText(status);
         statusBar()->showMessage(status);
     });
     // 设备状态
-    connect(&m_comm, &ModbusComm::onlineChanged, this, [this](bool online) {
+    connect(m_comm, &ModbusComm::onlineChanged, this, [this](bool online) {
+        m_deviceOnline = online;
         ui->onlineLabel->setText(online ? "在线" : "离线");
         ui->onlineLabel->setStyleSheet(online ? "color:#16a34a;font-weight:700;" : "color:#dc2626;font-weight:700;");
     });
     // 错误
-    connect(&m_comm, &ModbusComm::errorOccurred, this, [this](const QString &message) {
+    connect(m_comm, &ModbusComm::errorOccurred, this, [this](const QString &message) {
         statusBar()->showMessage("通信错误：" + message);
     });
     // 写入
 
     //将获取到的信息同步到ui上面
-    connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
+    connect(m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
         // 采集到一包数据后，同时更新数值、曲线、报警逻辑。
         m_lastData = data;
@@ -79,8 +74,14 @@ MainWindow::MainWindow(QWidget *parent)
         if (m_valueLabels.contains(channel)) {
             m_valueLabels[channel]->setStyleSheet("font-size:24px;font-weight:700;color:#dc2626;");
         }
-        //同时写入数据库，方便后续追溯。
-        m_db.insertAlarmRecord(channel, type, value, threshold);
+
+        // 报警入库也投递到数据库线程。
+        QMetaObject::invokeMethod(m_db, "insertAlarmRecordAsync", Qt::QueuedConnection,
+                                  Q_ARG(QString, channel),
+                                  Q_ARG(QString, type),
+                                  Q_ARG(double, value),
+                                  Q_ARG(double, threshold));
+
         //自动刷新报警界面
         refreshAlarmTable();
         statusBar()->showMessage(QString("报警：%1 %2，当前 %3，阈值 %4").arg(channel, type).arg(value).arg(threshold));
@@ -100,6 +101,23 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    // 先让通信线程里的 ModbusComm 主动断开，避免线程退出时还有连接或定时器在跑。
+    if (m_comm) {
+        QMetaObject::invokeMethod(m_comm, "disconnectDevice", Qt::BlockingQueuedConnection);
+    }
+
+    // 关闭通信线程和数据库线程。
+    // wait() 确保线程真正结束后再销毁 MainWindow。
+    if (m_commThread) {
+        m_commThread->quit();
+        m_commThread->wait();
+    }
+
+    if (m_dbThread) {
+        m_dbThread->quit();
+        m_dbThread->wait();
+    }
 }
 
 void MainWindow::initUI()
@@ -284,6 +302,30 @@ void MainWindow::initAlarmPage()
     ui->alarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
+void MainWindow::initWorkers()
+{
+    // 通信对象放到独立线程：
+    // Modbus 连接、定时采集、超时重连都在通信线程执行，避免阻塞 UI。
+    m_commThread = new QThread(this);
+    m_comm = new ModbusComm();
+    m_comm->moveToThread(m_commThread);
+    connect(m_commThread, &QThread::finished, m_comm, &QObject::deleteLater);
+    m_commThread->start();
+
+    // 数据库对象放到独立线程：
+    // 历史写入和查询都通过 queued signal/slot 进入数据库线程。
+    m_dbThread = new QThread(this);
+    m_db = new DatabaseManager();
+    m_db->moveToThread(m_dbThread);
+    connect(m_dbThread, &QThread::finished, m_db, &QObject::deleteLater);
+    m_dbThread->start();
+    if (!QMetaObject::invokeMethod(m_db, "open", Qt::QueuedConnection))
+    {
+        QMessageBox::warning(this, "数据库初始化失败", m_db->lastError());
+        return;
+    }
+}
+
 RuntimeConfig MainWindow::runtimeConfig() const
 {
     RuntimeConfig config;
@@ -333,6 +375,9 @@ void MainWindow::appendChartPoint(const SensorData &data)
 
 void MainWindow::on_conTcp_clicked()
 {
+
+    qDebug() << "on_conTcp_clicked 线程 : " << QThread::currentThread();
+
     // 点击连接时先保存当前界面配置，再把连接任务投递给通信线程。
     //saveSettings();
     applyAlarmLimits();
@@ -344,17 +389,26 @@ void MainWindow::on_conTcp_clicked()
         // TCP 模式：IP + 端口 + 从站地址。
         // 点击“连接 Modbus TCP”后，软件开始从外部 Modbus Slave/PLC 采集数据。
         qDebug() << "选择了 TCP 模式连接";
-        m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), config);
+        QMetaObject::invokeMethod(m_comm, [=]() {
+            m_comm->connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), config);
+        }, Qt::QueuedConnection);
+        //m_comm->connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), config); 单线程
+        // QMetaObject::invokeMethod(m_comm, "connectTcp", Qt::QueuedConnection,
+        //                           Q_ARG(QString, ui->ipLine->text()),
+        //                           Q_ARG(int, ui->spinPort->value()),
+        //                           Q_ARG(int, ui->spinSlaveAddr->value()),
+        //                           Q_ARG(RuntimeConfig, config));
     } else if (ui->rtuMode->isChecked()) {
         // RTU 模式：串口参数 + 从站地址。
         qDebug() << "选择了 RTU 模式连接";
-        m_comm.connectRtu(ui->serialPortCombo->currentText()
-                          ,ui->baudCombo->currentText().toInt()
-                          ,(QSerialPort::DataBits)ui->dataBitsCombo->currentText().toInt()
-                          ,(QSerialPort::StopBits)ui->stopBitsCombo->currentText().toInt()
-                          ,(QSerialPort::Parity)ui->parityCombo->currentText().toInt()
-                          ,ui->spinSlaveAddr->value(), config);
-
+        QMetaObject::invokeMethod(m_comm, "connectRtu", Qt::QueuedConnection,
+                                  Q_ARG(QString, ui->serialPortCombo->currentText()),
+                                  Q_ARG(int, ui->baudCombo->currentText().toInt()),
+                                  Q_ARG(QSerialPort::DataBits, (QSerialPort::DataBits)ui->stopBitsCombo->currentText().toInt()),
+                                  Q_ARG(QSerialPort::StopBits, (QSerialPort::StopBits)ui->stopBitsCombo->currentText().toInt()),
+                                  Q_ARG(QSerialPort::Parity, (QSerialPort::Parity)ui->parityCombo->currentText().toInt()),
+                                  Q_ARG(int, ui->spinSlaveAddr->value()),
+                                  Q_ARG(RuntimeConfig, config));
     } else {
         // 模拟模式：不用外部设备，由通信线程定时生成假数据。
     }
@@ -366,7 +420,8 @@ void MainWindow::on_conTcp_clicked()
 void MainWindow::on_disCon_clicked()
 {
     qDebug () << "点击了关闭按钮";
-    m_comm.disconnectDevice();
+    QMetaObject::invokeMethod(m_comm, "disconnectDevice", Qt::QueuedConnection);
+    //setConnectedUi(false);
 }
 
 
@@ -389,21 +444,24 @@ QTableWidgetItem* MainWindow::makeCell(const QString& text)
 
 void MainWindow::refreshAlarmTable()
 {
-    QList<QVariantMap> rows = m_db.queryAlarms();
 
-    // 先清空旧表格内容
-    ui->alarmTable->clearContents();
-    // 设置表格总行数
-    ui->alarmTable->setRowCount(rows.size());
+    QMetaObject::invokeMethod(m_db, "queryAlarmsAsync", Qt::QueuedConnection);
 
-    for (int row = 0; row < rows.size(); ++row) {
-        const QVariantMap item = rows.at(row);
-        ui->alarmTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
-        ui->alarmTable->setItem(row, 1, makeCell(item["channel"].toString()));
-        ui->alarmTable->setItem(row, 2, makeCell(item["alarm_type"].toString()));
-        ui->alarmTable->setItem(row, 3, makeCell(QString::number(item["value"].toDouble(), 'f', 1)));
-        ui->alarmTable->setItem(row, 4, makeCell(QString::number(item["threshold"].toDouble(), 'f', 1)));
-    }
+    connect(m_db, &DatabaseManager::alarmsReady, this, [=](const QList<QVariantMap> &rows){
+        // 先清空旧表格内容
+        ui->alarmTable->clearContents();
+        // 设置表格总行数
+        ui->alarmTable->setRowCount(rows.size());
+
+        for (int row = 0; row < rows.size(); ++row) {
+            const QVariantMap item = rows.at(row);
+            ui->alarmTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
+            ui->alarmTable->setItem(row, 1, makeCell(item["channel"].toString()));
+            ui->alarmTable->setItem(row, 2, makeCell(item["alarm_type"].toString()));
+            ui->alarmTable->setItem(row, 3, makeCell(QString::number(item["value"].toDouble(), 'f', 1)));
+            ui->alarmTable->setItem(row, 4, makeCell(QString::number(item["threshold"].toDouble(), 'f', 1)));
+        }
+    });
 }
 
 void MainWindow::applyAlarmLimits()
@@ -422,28 +480,33 @@ void MainWindow::applyAlarmLimits()
 void MainWindow::on_queryButton_clicked()
 {
     qDebug() << "点击了查询按钮";
-    QList<QVariantMap> rows = m_db.queryHistory(ui->startEdit->dateTime(), ui->endEdit->dateTime());
+    QMetaObject::invokeMethod(m_db, "queryHistoryAsync", Qt::QueuedConnection,
+                              Q_ARG(QDateTime, ui->startEdit->dateTime()),
+                              Q_ARG(QDateTime, ui->endEdit->dateTime()));
+    connect(m_db, &DatabaseManager::historyReady, this, [=](const QList<QVariantMap> &rows){
+        // 封装生成居中只读单元格 匿名函数
+        // auto makeCell = [](const QString& text)->QTableWidgetItem*{
+        //     QTableWidgetItem *item = new QTableWidgetItem(text);
+        //     item->setTextAlignment(Qt::AlignCenter);
+        //     item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+        //     return item;
+        // };
+        // 先清空旧表格内容
+        ui->historyTable->clearContents();
+        // 设置表格总行数
+        ui->historyTable->setRowCount(rows.size());
 
-    // 封装生成居中只读单元格 匿名函数
-    // auto makeCell = [](const QString& text)->QTableWidgetItem*{
-    //     QTableWidgetItem *item = new QTableWidgetItem(text);
-    //     item->setTextAlignment(Qt::AlignCenter);
-    //     item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-    //     return item;
-    // };
-    // 先清空旧表格内容
-    ui->historyTable->clearContents();
-    // 设置表格总行数
-    ui->historyTable->setRowCount(rows.size());
+        for (int row = 0; row < rows.size(); ++row) {
+            const QVariantMap item = rows.at(row);
+            ui->historyTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
+            ui->historyTable->setItem(row, 1, makeCell(QString::number(item["temp1"].toDouble(), 'f', 1)));
+            ui->historyTable->setItem(row, 2, makeCell(QString::number(item["temp2"].toDouble(), 'f', 1)));
+            ui->historyTable->setItem(row, 3, makeCell(QString::number(item["temp3"].toDouble(), 'f', 1)));
+            ui->historyTable->setItem(row, 4, makeCell(QString::number(item["pressure"].toDouble(), 'f', 1)));
+        }
 
-    for (int row = 0; row < rows.size(); ++row) {
-        const QVariantMap item = rows.at(row);
-        ui->historyTable->setItem(row, 0, makeCell(item["timestamp"].toString()));
-        ui->historyTable->setItem(row, 1, makeCell(QString::number(item["temp1"].toDouble(), 'f', 1)));
-        ui->historyTable->setItem(row, 2, makeCell(QString::number(item["temp2"].toDouble(), 'f', 1)));
-        ui->historyTable->setItem(row, 3, makeCell(QString::number(item["temp3"].toDouble(), 'f', 1)));
-        ui->historyTable->setItem(row, 4, makeCell(QString::number(item["pressure"].toDouble(), 'f', 1)));
-    }
+    });
+
 }
 
 

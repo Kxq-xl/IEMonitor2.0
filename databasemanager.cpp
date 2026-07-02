@@ -7,6 +7,8 @@ DatabaseManager::DatabaseManager(QObject *parent)
 
 bool DatabaseManager::open()
 {
+    qDebug() << "DatabaseManager::open 线程 : " << QThread::currentThread();
+
     // 数据库放在 exe 所在目录。
     // Qt Creator 用不同构建目录运行时，db 文件也会跟着出现在对应运行目录。
     const QString dbPath = QCoreApplication::applicationDirPath() + QDir::separator() + "industrial_monitor.db";
@@ -19,11 +21,16 @@ bool DatabaseManager::open()
         m_lastError = m_db.lastError().text();
         return false;
     }
-    return createTables();
+    const bool ok = createTables();
+    emit databaseReady(ok, ok ? "数据库已打开" : m_lastError);
+    return ok;
 }
 
 bool DatabaseManager::insertSensorData(const SensorData &data)
 {
+
+    qDebug() << "DatabaseManager::insertSensorData 线程 : " << QThread::currentThread();
+
     // 保存运行数据，供“历史数据”页面按时间查询。
     QSqlQuery query(m_db);
     query.prepare("insert into t_sensor_data(timestamp,temp1,temp2,temp3,pressure) values(?,?,?,?,?)");
@@ -41,6 +48,8 @@ bool DatabaseManager::insertSensorData(const SensorData &data)
 
 QList<QVariantMap> DatabaseManager::queryHistory(const QDateTime &start, const QDateTime &end)
 {
+    qDebug() << "DatabaseManager::queryHistory 线程 : " << QThread::currentThread();
+
     // 查询指定时间范围内的历史采样数据。
     // QVariantMap 让 UI 层不用关心 SQL 字段顺序，按名字取值即可。
     QList<QVariantMap> rows;
@@ -68,6 +77,8 @@ QList<QVariantMap> DatabaseManager::queryHistory(const QDateTime &start, const Q
 
 QList<QVariantMap> DatabaseManager::queryAlarms()
 {
+    qDebug() << "DatabaseManager::queryAlarms 线程 : " << QThread::currentThread();
+
     // QVariantMap 让 UI 层不用关心 SQL 字段顺序，按名字取值即可。
     QList<QVariantMap> rows;
     QSqlQuery query(m_db);
@@ -91,6 +102,8 @@ QList<QVariantMap> DatabaseManager::queryAlarms()
 
 bool DatabaseManager::insertAlarmRecord(const QString &channel, const QString &type, double value, double threshold)
 {
+    qDebug() << "DatabaseManager::insertAlarmRecord 线程 : " << QThread::currentThread();
+
     // 保存报警事件，真实工业软件通常会长期保留报警记录。
     QSqlQuery query(m_db);
     query.prepare("insert into t_alarm_record(timestamp,channel,alarm_type,value,threshold) values(?,?,?,?,?)");
@@ -109,6 +122,34 @@ bool DatabaseManager::insertAlarmRecord(const QString &channel, const QString &t
 QString DatabaseManager::lastError() const
 {
     return m_lastError;
+}
+
+void DatabaseManager::insertSensorDataAsync(const SensorData &data)
+{
+    // Async 函数本身不创建线程；它依赖 MainWindow 用 QueuedConnection
+    // 投递到数据库线程执行。
+    if (!insertSensorData(data)) {
+        emit databaseError(m_lastError);
+    }
+}
+
+void DatabaseManager::insertAlarmRecordAsync(const QString &channel, const QString &type, double value, double threshold)
+{
+    if (!insertAlarmRecord(channel, type, value, threshold)) {
+        emit databaseError(m_lastError);
+    }
+}
+
+void DatabaseManager::queryHistoryAsync(const QDateTime &start, const QDateTime &end)
+{
+    // 查询完成后通过信号把结果发回 UI 线程。
+    emit historyReady(queryHistory(start, end));
+}
+
+void DatabaseManager::queryAlarmsAsync()
+{
+    // 查询完成后通过信号把结果发回 UI 线程。
+    emit alarmsReady(queryAlarms());
 }
 
 bool DatabaseManager::createTables()

@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QThread>
 #include "datamodel.h"
 
 // databasemanager.h / databasemanager.cpp
@@ -20,6 +21,7 @@ public:
     explicit DatabaseManager(QObject *parent = nullptr);
 
 
+public slots:
     // 打开程序运行目录下的 industrial_monitor.db，并自动建表。
     bool open();
 
@@ -37,8 +39,30 @@ public:
 
     // 返回最近一次数据库错误，方便界面提示。
     QString lastError() const;
-signals:
 
+    // 异步保存采样数据；供 UI 线程通过 QueuedConnection 投递到数据库线程。
+    void insertSensorDataAsync(const SensorData &data);
+
+    // 异步保存报警记录；供报警触发后投递到数据库线程。
+    void insertAlarmRecordAsync(const QString &channel, const QString &type, double value, double threshold);
+
+    // 下面两个查询函数设计成 slot，是为了让 MainWindow 用 QueuedConnection
+    // 把查询任务投递到数据库线程，避免 UI 线程等待数据库 IO。
+    void queryHistoryAsync(const QDateTime &start, const QDateTime &end);
+    void queryAlarmsAsync();
+
+signals:
+    // 数据库打开完成。
+    void databaseReady(bool ok, const QString &message);
+
+    // 历史数据查询完成。
+    void historyReady(const QList<QVariantMap> &rows);
+
+    // 报警记录查询完成。
+    void alarmsReady(const QList<QVariantMap> &rows);
+
+    // 数据库操作失败。
+    void databaseError(const QString &message);
 
 private:
     // 创建运行数据表和报警记录表。

@@ -9,7 +9,7 @@
 #include <QVariant>
 #include <QSerialPort>
 #include <QModbusRtuSerialClient>
-
+#include <QThread>
 
 #include "datamodel.h"
 #include "dataprocessor.h"
@@ -32,11 +32,7 @@ public:
     explicit ModbusComm(QObject *parent = nullptr);
     ~ModbusComm();
 
-    /*
-     *
-     * 这俩 connect 最后一个参数 目前采用 intervalMs ，暂时不实现断线重连
-     * */
-
+public slots:
     // 连接 Modbus TCP 从站，并按 intervalMs 周期读取寄存器。
     void connectTcp(const QString &ip, int port, int slaveId, const RuntimeConfig &config);
 
