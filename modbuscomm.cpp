@@ -4,8 +4,12 @@
 ModbusComm::ModbusComm(QObject *parent)
     : QObject{parent}
 {
-    //移至startPolling中去
-    //connect(&m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+    // 采集周期
+    m_pollTimer = new QTimer(this);
+    connect(m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+    // 断线重连
+    m_reconnectTimer = new QTimer(this);
+    connect(m_reconnectTimer, &QTimer::timeout, this, &ModbusComm::reconnect);
 }
 
 ModbusComm::~ModbusComm()
@@ -13,8 +17,12 @@ ModbusComm::~ModbusComm()
     disconnectDevice();
 }
 
-void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, int intervalMs)
+void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, const RuntimeConfig &config)
 {
+    // reconnecting 用来区分“用户主动连接”和“自动重连”。
+    // 主动连接要清零重连次数；自动重连不能清零，否则最大重连次数会失效。
+    const bool reconnecting = m_reconnectTimer->isActive();
+
     // 重新连接前先断开旧连接，避免多个客户端同时读同一个设备。
     disconnectDevice();
 
@@ -22,9 +30,11 @@ void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, int interv
     m_tcpIp = ip;
     m_tcpPort = port;
     m_slaveId = slaveId;
-    m_intervalMs = intervalMs;
+    m_config = config;    //配置文件不实现
+    if (!reconnecting) {
+        m_reconnectCount = 0;
+    }
 
-    //m_config = config;    //配置文件不实现
 
     // Modbus TCP 最关键的三个参数：IP、端口、从站地址。
     // IP/端口定位设备，从站地址定位设备内部的 Modbus 从站。
@@ -33,7 +43,7 @@ void ModbusComm::connectTcp(const QString &ip, int port, int slaveId, int interv
     client->setConnectionParameter(QModbusDevice::NetworkPortParameter, port);
     setupClient(client);
 
-
+    emit statusChanged("正在连接 Modbus TCP...");
     //连接设备
     if (!m_client->connectDevice()) {
         qDebug() << "m_client->connectDevice() error:  " << m_client->errorString();
@@ -45,10 +55,12 @@ void ModbusComm::connectRtu(const QString &portName,
                             QSerialPort::StopBits stopBits,
                             QSerialPort::Parity parity,
                             int slaveId,
-                            int intervalMs)
+                            const RuntimeConfig &config)
 {
     // RTU 和 TCP 的上层接口保持一致，区别只在底层连接参数：
     // TCP 用 IP/端口，RTU 用串口号、波特率、数据位、停止位、校验位。
+    const bool reconnecting = m_reconnectTimer->isActive();
+    disconnectDevice();
     m_mode = CommMode::Rtu;
     m_rtuPortName = portName;
     m_rtuBaudRate = baudRate;
@@ -56,7 +68,10 @@ void ModbusComm::connectRtu(const QString &portName,
     m_rtuStopBits = stopBits;
     m_rtuParity = parity;
     m_slaveId = slaveId;
-    m_intervalMs = intervalMs;
+    m_config = config;
+    if (!reconnecting){
+        m_reconnectCount = 0;
+    }
 
     //设置 RTU 连接参数
     auto client = new QModbusRtuSerialClient(this);
@@ -68,6 +83,7 @@ void ModbusComm::connectRtu(const QString &portName,
     setupClient(client);
 
 
+    emit statusChanged("正在连接 Modbus RTU...");
     //连接设备
     if (!m_client->connectDevice()) {
         qDebug() << "m_client->connectDevice() error:  " << m_client->errorString();
@@ -78,17 +94,20 @@ void ModbusComm::connectRtu(const QString &portName,
 
 void ModbusComm::disconnectDevice()
 {
-    // Qt 的 QObject 父子关系会管理内存，但这里主动 deleteLater，
-    // 可以让“断开后重新连接”的生命周期更清楚。
-    if (!m_client) {
-        return;
-    }
+    // 停止采集和重连定时器。
+    m_pollTimer->stop();
+    m_reconnectTimer->stop();
 
-    if (m_client->state() != QModbusDevice::UnconnectedState) {
-        m_client->disconnectDevice();
-    }
-    m_client->deleteLater();
-    m_client = nullptr;
+    // 恢复采集定时器默认连接到 poll()，避免从模拟模式切回真实模式时仍触发模拟数据。
+    disconnect(m_pollTimer, nullptr, this, nullptr);
+    connect(m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+
+    // 清理旧 TCP/RTU 客户端。
+    clearClient();
+    m_mode = CommMode::None;
+    m_timeoutCount = 0;
+    emit onlineChanged(false);
+    emit statusChanged("已断开");
 }
 
 bool ModbusComm::isConnected() const
@@ -111,6 +130,7 @@ void ModbusComm::poll()
     if (!reply) {
         //emit errorOccurred(m_client->errorString());
         qDebug() << "reply error";
+        handleCommError(m_client->errorString());
         return;
     }
 
@@ -124,9 +144,10 @@ void ModbusComm::poll()
             reply->deleteLater();
             //如果没有错误
             if (reply->error() != QModbusDevice::NoError) {
-                //emit errorOccurred(reply->errorString());
+                handleCommError(reply->errorString());
                 return;
             }
+            m_timeoutCount = 0;
             //得到普通回复
             const QModbusDataUnit unit = reply->result();
             QVector<quint16> values;
@@ -147,6 +168,32 @@ void ModbusComm::poll()
     }
 }
 
+void ModbusComm::reconnect()
+{
+    qDebug() << "尝试断线重连";
+    // 自动重连只对真实 TCP/RTU 有意义，内置模拟不需要重连。
+    if (m_mode == CommMode::None || m_mode == CommMode::Simulation) {
+        m_reconnectTimer->stop();
+        return;
+    }
+
+    if (m_reconnectCount >= m_config.maxReconnectCount) {
+        m_reconnectTimer->stop();
+        emit statusChanged("重连次数已达到上限");
+        return;
+    }
+
+    ++m_reconnectCount;
+    qDebug() << QString("正在自动重连，第 %1 次").arg(m_reconnectCount);
+    emit statusChanged(QString("正在自动重连，第 %1 次").arg(m_reconnectCount));
+
+    if (m_mode == CommMode::Tcp) {
+        connectTcp(m_tcpIp, m_tcpPort, m_slaveId, m_config);
+    } else if (m_mode == CommMode::Rtu) {
+        connectRtu(m_rtuPortName, m_rtuBaudRate, m_rtuDataBits, m_rtuStopBits, m_rtuParity, m_slaveId, m_config);
+    }
+}
+
 void ModbusComm::setupClient(QModbusClient *client)
 {
 
@@ -162,24 +209,27 @@ void ModbusComm::setupClient(QModbusClient *client)
     connect(m_client, &QModbusClient::stateChanged, this, [=](){
         if (m_client->state() == QModbusDevice::ConnectedState)
         {
-            //qDebug() << (m_mode == CommMode::Tcp ? "Modbus TCP 已连接" : "Modbus RTU 已连接");
+            m_timeoutCount = 0;
+            m_reconnectCount = 0;
+            m_reconnectTimer->stop();
             //设备状态
             emit onlineChanged(true);
             //通信状态
             emit statusChanged(m_mode == CommMode::Tcp ? "Modbus TCP 已连接" : "Modbus RTU 已连接");
-
-            //m_pollTimer.setInterval(m_intervalMs); //移至startPolling中去
             startPolling();
-            m_pollTimer.start();
         }
         else if (m_client->state() == QModbusDevice::UnconnectedState)
         {
-            m_pollTimer.stop();
+            //停止采集数据
+            m_pollTimer->stop();
             qDebug() << (m_mode == CommMode::Tcp ? "Modbus TCP 已断开" : "Modbus RTU 已断开");
             //设备状态
             emit onlineChanged(false);
             //通信状态
             emit statusChanged("设备已断开，等待自动重连");
+            if (!m_reconnectTimer->isActive()) {
+                m_reconnectTimer->start(m_config.reconnectIntervalMs);
+            }
         }
     });
 
@@ -191,7 +241,46 @@ void ModbusComm::setupClient(QModbusClient *client)
 
 void ModbusComm::startPolling()
 {
-    disconnect(&m_pollTimer, nullptr, this, nullptr);
-    connect(&m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
-    m_pollTimer.setInterval(m_intervalMs);
+    disconnect(m_pollTimer, nullptr, this, nullptr);
+    connect(m_pollTimer, &QTimer::timeout, this, &ModbusComm::poll);
+    m_pollTimer->start(m_config.sampleIntervalMs);
+}
+
+void ModbusComm::handleCommError(const QString &message)
+{
+    // 连续错误次数用于判断设备是否离线。
+    // 偶发一次失败不马上断线，连续 3 次失败才认为通信异常。
+    ++m_timeoutCount;
+    emit errorOccurred(message);
+    if (m_timeoutCount >= 3) {
+        emit onlineChanged(false);
+        emit statusChanged("通信连续超时，设备离线");
+
+        if (m_client) {
+            m_client->disconnectDevice();
+        }
+
+        if (!m_reconnectTimer->isActive() && m_mode != CommMode::None) {
+            m_reconnectTimer->start(m_config.reconnectIntervalMs);
+        }
+    }
+}
+
+void ModbusComm::clearClient()
+{
+    if (!m_client) {
+        return;
+    }
+
+    // 旧客户端销毁前先断开和 ModbusComm 的信号槽，避免旧状态信号影响新连接。
+    disconnect(m_client, nullptr, this, nullptr);
+
+    // 如果设备还处于连接状态，先主动断开协议连接。
+    if (m_client->state() != QModbusDevice::UnconnectedState) {
+        m_client->disconnectDevice();
+    }
+
+    // deleteLater 让对象在所属线程事件循环中安全释放。
+    m_client->deleteLater();
+    m_client = nullptr;
 }

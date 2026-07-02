@@ -40,6 +40,9 @@ public:
     // 初始化报警界面
     void initAlarmPage();
 
+    // 从界面控件组装运行配置，传给通信线程使用。
+    RuntimeConfig runtimeConfig() const;
+
     // 更新某个通道的实时数值标签；无效数据会显示为“无效”。
     void updateSensorLabel(const QString &name, double value, const QString &unit, bool valid);
 

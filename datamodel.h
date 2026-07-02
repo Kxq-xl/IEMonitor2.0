@@ -23,8 +23,25 @@ struct SensorData
     bool valid = true;
     QString invalidReason;
 };
+// 运行参数配置。
+// 这些参数来自界面控件，也会通过 QSettings 保存，下次启动自动恢复。
+struct RuntimeConfig
+{
+    // Modbus 采集周期。
+    int sampleIntervalMs = 100;
 
+    // 历史数据保存周期。
+    int saveIntervalSec = 10;
 
+    // 断线后每隔多久尝试重连。
+    int reconnectIntervalMs = 3000;
+
+    // 最多自动重连几次。
+    int maxReconnectCount = 5;
+
+    // 报警防抖时间：持续超限超过这个时间才触发报警。
+    int alarmDelayMs = 1000;
+};
 
 
 #endif // DATAMODEL_H

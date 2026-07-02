@@ -32,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     applyAlarmLimits();
 
+
+    // 通信线程 -> UI 线程：状态、在线、错误、写入结果。
     // 通信状态
     connect(&m_comm, &ModbusComm::statusChanged, this, [this](const QString &status) {
         ui->statusLabel->setText(status);
@@ -42,6 +44,11 @@ MainWindow::MainWindow(QWidget *parent)
         ui->onlineLabel->setText(online ? "在线" : "离线");
         ui->onlineLabel->setStyleSheet(online ? "color:#16a34a;font-weight:700;" : "color:#dc2626;font-weight:700;");
     });
+    // 错误
+    connect(&m_comm, &ModbusComm::errorOccurred, this, [this](const QString &message) {
+        statusBar()->showMessage("通信错误：" + message);
+    });
+    // 写入
 
     //将获取到的信息同步到ui上面
     connect(&m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
@@ -86,6 +93,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
         statusBar()->showMessage(channel + " 已恢复正常");
     });
+
+
 }
 
 MainWindow::~MainWindow()
@@ -275,6 +284,17 @@ void MainWindow::initAlarmPage()
     ui->alarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
+RuntimeConfig MainWindow::runtimeConfig() const
+{
+    RuntimeConfig config;
+    config.sampleIntervalMs = ui->spinInterval->value();
+    config.saveIntervalSec = ui->saveIntervalSpin->value();
+    config.reconnectIntervalMs = ui->reconnectIntervalSpin->value();
+    config.maxReconnectCount = ui->maxReconnectSpin->value();
+    config.alarmDelayMs = ui->alarmDelaySpin->value();
+    return config;
+}
+
 void MainWindow::updateSensorLabel(const QString &name, double value, const QString &unit, bool valid)
 {
     if (!m_valueLabels.contains(name)) {
@@ -317,16 +337,14 @@ void MainWindow::on_conTcp_clicked()
     //saveSettings();
     applyAlarmLimits();
     m_sampleIndex = 0;
-    //RuntimeConfig config = runtimeConfig();
+    RuntimeConfig config = runtimeConfig();
 
     qDebug () << "点击了连接按钮";
-
-
     if (ui->tcpMode->isChecked()) {
         // TCP 模式：IP + 端口 + 从站地址。
         // 点击“连接 Modbus TCP”后，软件开始从外部 Modbus Slave/PLC 采集数据。
         qDebug() << "选择了 TCP 模式连接";
-        m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), ui->spinInterval->value());
+        m_comm.connectTcp(ui->ipLine->text(), ui->spinPort->value(), ui->spinSlaveAddr->value(), config);
     } else if (ui->rtuMode->isChecked()) {
         // RTU 模式：串口参数 + 从站地址。
         qDebug() << "选择了 RTU 模式连接";
@@ -335,7 +353,7 @@ void MainWindow::on_conTcp_clicked()
                           ,(QSerialPort::DataBits)ui->dataBitsCombo->currentText().toInt()
                           ,(QSerialPort::StopBits)ui->stopBitsCombo->currentText().toInt()
                           ,(QSerialPort::Parity)ui->parityCombo->currentText().toInt()
-                          ,ui->spinSlaveAddr->value(), ui->spinInterval->value());
+                          ,ui->spinSlaveAddr->value(), config);
 
     } else {
         // 模拟模式：不用外部设备，由通信线程定时生成假数据。
