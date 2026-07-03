@@ -44,10 +44,11 @@ public slots:
                     QSerialPort::Parity parity,
                     int slaveId,
                     const RuntimeConfig &config);
-
     // 断开真实设备或停止内置模拟。
     void disconnectDevice();
 
+    // 写单个保持寄存器，对应 Modbus 功能码 0x06。
+    void writeRegister(int address, quint16 value);
 
     // 给 UI 和数据库定时保存逻辑判断当前是否处于采集状态。
     bool isConnected() const;
@@ -68,6 +69,9 @@ signals:
     void dataReady(const SensorData &data);
     // 通信错误提示，例如连接失败、读写失败。
     void errorOccurred(const QString &message);
+
+    // 写寄存器完成，ok 表示是否成功。
+    void writeFinished(bool ok, const QString &message);
 
 private:
 

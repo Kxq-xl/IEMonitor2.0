@@ -119,6 +119,44 @@ void ModbusComm::disconnectDevice()
     emit statusChanged("已断开");
 }
 
+void ModbusComm::writeRegister(int address, quint16 value)
+{
+    // 新增：限制仅允许 0/1/2/3 寄存器写入
+    QList<int> allowAddr = {0,1,2,3};
+    if (!allowAddr.contains(address))
+    {
+        emit writeFinished(false, QString("禁止写入地址%1，仅允许0、1、2、3寄存器下发").arg(address));
+        return;
+    }
+
+    // 内置模拟没有真实寄存器，这里只返回成功提示，方便体验“参数下发”流程。
+    if (m_mode == CommMode::Simulation) {
+        emit writeFinished(true, QString("模拟写入成功：地址 %1 = %2").arg(address).arg(value));
+        return;
+    }
+
+    if (!m_client || m_client->state() != QModbusDevice::ConnectedState) {
+        emit writeFinished(false, "设备未连接，无法写寄存器");
+        return;
+    }
+
+    // 写单个保持寄存器，对应 Modbus 功能码 0x06。
+    // Qt SerialBus 会根据 DataUnit 和 sendWriteRequest 自动组帧。
+    QModbusDataUnit unit(QModbusDataUnit::HoldingRegisters, address, 1);
+    unit.setValue(0, value);
+    QModbusReply *reply = m_client->sendWriteRequest(unit, m_slaveId);
+    if (!reply) {
+        emit writeFinished(false, m_client->errorString());
+        return;
+    }
+
+    connect(reply, &QModbusReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        const bool ok = reply->error() == QModbusDevice::NoError;
+        emit writeFinished(ok, ok ? "参数下发成功" : reply->errorString());
+    });
+}
+
 bool ModbusComm::isConnected() const
 {
     return (m_client && m_client->state() == QModbusDevice::ConnectedState);

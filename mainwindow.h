@@ -81,6 +81,8 @@ private slots:
 
     void on_pauseChartButton_clicked();
 
+    void on_writeButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     // 通信工作对象，实际运行在 m_commThread 中。

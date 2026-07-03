@@ -45,7 +45,9 @@ MainWindow::MainWindow(QWidget *parent)
         statusBar()->showMessage("通信错误：" + message);
     });
     // 写入
-
+    connect(m_comm, &ModbusComm::writeFinished, this, [this](bool ok, const QString &message) {
+        statusBar()->showMessage((ok ? "写入成功：" : "写入失败：") + message);
+    });
     //将获取到的信息同步到ui上面
     connect(m_comm, &ModbusComm::dataReady, this, [this](const SensorData &data) {
         // 这就是上位机的数据主链路：
@@ -285,6 +287,9 @@ void MainWindow::initConnectionPage()
     ui->pressure_lowRange->setValue(0.0);
     ui->pressure_highRange->setValue(12.0);
 
+
+    //
+    ui->writeValueSpin->setRange(0, 65535);
 
     // 初始化折线图
     initChart();
@@ -633,5 +638,14 @@ void MainWindow::on_pauseChartButton_clicked()
     // 曲线暂停按钮：只影响曲线追加，不影响采集和数据库保存。
     m_chartPaused = !m_chartPaused;
     ui->pauseChartButton->setText(m_chartPaused ? "继续曲线" : "暂停曲线");
+}
+
+// 参数下发按钮：通过 Modbus 0x06 写单个保持寄存器。
+void MainWindow::on_writeButton_clicked()
+{
+    // 参数下发走通信线程，避免 UI 直接调用 Modbus 写操作。
+    QMetaObject::invokeMethod(m_comm, "writeRegister", Qt::QueuedConnection,
+                              Q_ARG(int, ui->writeAddressSpin->value()),
+                              Q_ARG(quint16, static_cast<quint16>(ui->writeValueSpin->value())));
 }
 
