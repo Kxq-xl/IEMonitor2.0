@@ -13,7 +13,8 @@ MainWindow::MainWindow(QWidget *parent)
     initUI();
     //通信和数据库 多线程
     initWorkers();
-
+    //加载上一次的配置文件
+    loadSettings();
     m_saveTimer = new QTimer(this);
     connect(m_saveTimer, &QTimer::timeout, this, [this]() {
         if (m_deviceOnline && m_lastData.timestamp.isValid() && m_lastData.valid){
@@ -109,7 +110,8 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
-
+    // 退出前保存当前界面配置，方便下次启动恢复。
+    saveSettings();
     // 先让通信线程里的 ModbusComm 主动断开，避免线程退出时还有连接或定时器在跑。
     if (m_comm) {
         QMetaObject::invokeMethod(m_comm, "disconnectDevice", Qt::BlockingQueuedConnection);
@@ -387,7 +389,8 @@ void MainWindow::on_conTcp_clicked()
     qDebug() << "on_conTcp_clicked 线程 : " << QThread::currentThread();
 
     // 点击连接时先保存当前界面配置，再把连接任务投递给通信线程。
-    //saveSettings();
+    saveSettings();
+
     applyAlarmLimits();
     m_sampleIndex = 0;
     RuntimeConfig config = runtimeConfig();
@@ -481,6 +484,106 @@ void MainWindow::applyAlarmLimits()
     m_alarm.setLimit("温度2", ui->temp2_lowRange->value(),ui->temp2_highRange->value());
     m_alarm.setLimit("温度3", ui->temp3_lowRange->value(), ui->temp3_highRange->value());
     m_alarm.setLimit("压力", ui->pressure_lowRange->value(), ui->pressure_highRange->value());
+}
+
+void MainWindow::loadSettings()
+{
+    // 使用 ini 文件保存配置，便于拷贝、查看和随程序一起交付。
+    const QString iniPath = QCoreApplication::applicationDirPath() + "/industrial_monitor.ini";
+    QSettings settings(iniPath, QSettings::IniFormat);
+
+    settings.beginGroup("ModbusTCP");
+    ui->ipLine->setText(settings.value("IP", "127.0.0.1").toString());
+    ui->spinPort->setValue(settings.value("Port", 502).toInt());
+    ui->spinSlaveAddr->setValue(settings.value("SlaveID", 1).toInt());
+    ui->spinInterval->setValue(settings.value("SampleIntervalMs", 100).toInt());
+    ui->saveIntervalSpin->setValue(settings.value("SaveIntervalSec", 10).toInt());
+    ui->reconnectIntervalSpin->setValue(settings.value("ReconnectIntervalMs", 3000).toInt());
+    settings.endGroup();
+
+    settings.beginGroup("ModbusRTU");
+    const QString savedPort = settings.value("ComPort", ui->serialPortCombo->currentText()).toString();
+    if (!savedPort.isEmpty()) {
+        const int index = ui->serialPortCombo->findText(savedPort);
+        if (index >= 0) {
+            ui->serialPortCombo->setCurrentIndex(index);
+        } else {
+            ui->serialPortCombo->addItem(savedPort);
+            ui->serialPortCombo->setCurrentText(savedPort);
+        }
+    }
+    ui->baudCombo->setCurrentText(settings.value("BaudRate", "9600").toString());
+    ui->dataBitsCombo->setCurrentText(settings.value("DataBits", "8").toString());
+    ui->stopBitsCombo->setCurrentText(settings.value("StopBits", "1").toString());
+    ui->parityCombo->setCurrentText(settings.value("Parity", "None").toString());
+    settings.endGroup();
+
+    settings.beginGroup("WindowUI");
+    resize(settings.value("Width", width()).toInt(), settings.value("Height", height()).toInt());
+    settings.endGroup();
+
+    settings.beginGroup("AlarmSetting");
+    ui->maxReconnectSpin->setValue(settings.value("MaxRetryCount", 5).toInt());
+    ui->alarmDelaySpin->setValue(settings.value("AlarmDelayMs", 1000).toInt());
+
+    // 加载三个温度 以及 压力的 高低阈值
+    ui->temp1_lowRange->setValue(settings.value("温度1Low",  ui->temp1_lowRange->value()).toDouble());
+    ui->temp1_highRange->setValue(settings.value("温度1High",  ui->temp1_highRange->value()).toDouble());
+    ui->temp2_lowRange->setValue(settings.value("温度2Low",  ui->temp2_lowRange->value()).toDouble());
+    ui->temp2_highRange->setValue(settings.value("温度2High",  ui->temp2_highRange->value()).toDouble());
+    ui->temp3_lowRange->setValue(settings.value("温度3Low",  ui->temp3_lowRange->value()).toDouble());
+    ui->temp3_highRange->setValue(settings.value("温度3High",  ui->temp3_highRange->value()).toDouble());
+    ui->pressure_lowRange->setValue(settings.value("压力Low",  ui->pressure_lowRange->value()).toDouble());
+    ui->pressure_highRange->setValue(settings.value("压力High", ui->pressure_highRange->value()).toDouble());
+
+    settings.endGroup();
+}
+
+void MainWindow::saveSettings()
+{
+
+    // 关闭程序或点击连接时保存配置到 ini 文件，下一次启动直接恢复。
+    const QString iniPath = QCoreApplication::applicationDirPath() + "/industrial_monitor.ini";
+    QSettings settings(iniPath, QSettings::IniFormat);
+
+    settings.beginGroup("ModbusTCP");
+    settings.setValue("IP", ui->ipLine->text());
+    settings.setValue("Port", ui->spinPort->value());
+    settings.setValue("SlaveID", ui->spinSlaveAddr->value());
+    settings.setValue("SampleIntervalMs", ui->spinInterval->value());
+    settings.setValue("SaveIntervalSec", ui->saveIntervalSpin->value());
+    settings.setValue("ReconnectIntervalMs", ui->reconnectIntervalSpin->value());
+    settings.endGroup();
+
+    settings.beginGroup("ModbusRTU");
+    settings.setValue("ComPort", ui->serialPortCombo->currentText());
+    settings.setValue("BaudRate", ui->baudCombo->currentText());
+    settings.setValue("DataBits", ui->dataBitsCombo->currentText());
+    settings.setValue("StopBits", ui->stopBitsCombo->currentText());
+    settings.setValue("Parity", ui->parityCombo->currentText());
+    settings.endGroup();
+
+    settings.beginGroup("WindowUI");
+    settings.setValue("Width", width());
+    settings.setValue("Height", height());
+    settings.endGroup();
+
+    settings.beginGroup("AlarmSetting");
+    settings.setValue("EnableAlarm", 1);
+    settings.setValue("MaxRetryCount", ui->maxReconnectSpin->value());
+    settings.setValue("AlarmDelayMs", ui->alarmDelaySpin->value());
+
+
+    // 保存三个温度 以及 压力的 高低阈值
+    settings.setValue("温度1Low", ui->temp1_lowRange->value());
+    settings.setValue("温度1High", ui->temp1_highRange->value());
+    settings.setValue("温度2Low", ui->temp2_lowRange->value());
+    settings.setValue("温度2High", ui->temp2_highRange->value());
+    settings.setValue("温度3Low", ui->temp3_lowRange->value());
+    settings.setValue("温度3High", ui->temp3_highRange->value());
+    settings.setValue("压力Low", ui->pressure_lowRange->value());
+    settings.setValue("压力High", ui->pressure_highRange->value());
+    settings.endGroup();
 }
 
 

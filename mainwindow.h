@@ -12,6 +12,7 @@
 #include <QTableWidgetItem>
 #include "alarmmanager.h"
 #include <QThread>
+#include <QSettings>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -61,7 +62,11 @@ public:
 
     // 把界面上填写的阈值同步到 AlarmManager。
     void applyAlarmLimits();
+    // 从 QSettings 读取上次保存的连接参数、阈值和运行参数。
+    void loadSettings();
 
+    // 把当前界面配置保存到 QSettings。
+    void saveSettings();
 private slots:
     //连接Modbus TCP按钮
     void on_conTcp_clicked();
